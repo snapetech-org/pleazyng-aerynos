@@ -15,8 +15,10 @@ sudo moss -y pkg add pleazyng
 
 If Pleazyng is already installed, inspect `sudo moss sync --dry-run`, then use
 `sudo moss -y sync` to apply the selected updates. Moss `pkg add` alone does not
-upgrade an installed version. This versioned feed stays pinned until you choose
-another channel release.
+upgrade an installed version. Each snapshot also supplies a versioned
+`stone.index` for clients that prefer a pinned package. The
+[last-good receipt](sync-state/last-good.json) records the current qualified
+source and feed URLs.
 
 Public feed fetch, checksum comparison, removal/reinstall and ordinary relaunch
 also pass in the guest; see [publication receipt](publication-receipt.json).
@@ -33,9 +35,9 @@ boulder build stone.yaml
 
 The `pkg/` directory is required; keep it beside `stone.yaml`.
 
-## Build and evidence
+## Qualification history
 
-The first package is **3.0.22+181**, package release **1**, built from source
+The initial seed package is **3.0.22+181**, package release **1**, built from source
 snapshot `a13b139cd75b8521deedb8dc8ee00928754aac11`. The release carries the exact
 tested `.stone`, Moss index, original flat application archive, SHA-256 list and
 complete Pleazyng source archive. [Native input pins](source-inputs) identify
@@ -57,18 +59,44 @@ attestation and is not an all-platform core application release.
 The immutable v3.0.7 input failed visible-video QA and is not distributed here.
 See the [historical record](https://github.com/snapetech-org/pleazyng/blob/main/docs/maintainers/aerynos-qualification.md).
 
-## Known issues under investigation
+## Fresh sign-in and input methods
 
-A new fresh-install test on aerynOS 2026.11 found that the Jellyfin password
-field can remain empty when typing with the default GTK input method. Ordinary
-Search typing works; launching the same package with the simple input method
-allowed fixture sign-in. That diagnostic override is not the shipping default
-or a qualification result. The cause is still under investigation.
+A fresh-install test of the seed package found empty password input with the
+default GTK input method. The bundle lacked its input-method module cache.
+Generating the cache against the shipped GTK modules allowed default-method
+sign-in; forcing a simple input method was a diagnostic only.
 
-The earlier saved-connection relaunch and playback results remain historical
-evidence; they do not establish that fresh default-method sign-in passes.
-Automatic promotion is blocked until the ordinary fresh-login check passes.
-The existing pinned preview remains available for review.
+New snapshots must build and relocate that cache and pass fresh keyboard-driven
+sign-in in the ordinary installed app. The seed's earlier saved-connection
+relaunch does not establish fresh-login qualification. Consult the current
+qualification receipt for the checks actually completed for each snapshot.
+
+## Automatic synchronization
+
+The channel reconciles canonical Pleazyng `main` on a five-minute GitHub Actions
+schedule, subject to scheduling and runner availability. It builds an exact
+source snapshot, boots a fresh native aerynOS KVM guest, builds and upgrades the
+Stone, and gates publication on dependency and release-app checks. The package
+release counter advances for a new source SHA even when the app version stays
+the same. A failed candidate leaves the previous feed available.
+
+Qualified snapshots are immutable prereleases, independent of all-platform
+core releases. The live feed changes in one Git commit after all release
+assets and their digests are verified. Older or divergent source cannot replace
+a newer published source. Active builds are preserved and pending polls
+coalesce. Same-source failures retry after a 30-minute backoff; a new SHA is
+eligible immediately.
+
+See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actions),
+[synchronization status](sync-state/status.json), the last-good receipt and the
+[canonical runbook](https://github.com/snapetech-org/pleazyng/blob/main/docs/maintainers/aerynos-sync.md).
+The first automatic promotion switches the install command above from the seed
+to the maintained feed. Each release retains a separate pinned index.
+
+A weekly health commit records source/feed availability to keep reconciliation
+active. Manual `sync.yml` can re-enable the schedule with this repository's
+scoped Actions token. No organization secret, deployment key, App grant or
+canonical push hook is required.
 
 ## Source and licensing
 

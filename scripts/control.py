@@ -14,7 +14,7 @@ import tarfile
 
 CANONICAL = 'snapetech-org/pleazyng'
 CHANNEL = 'snapetech-org/pleazyng-aerynos'
-REQUIRED = {'native_boulder_build', 'native_moss_install', 'native_moss_upgrade', 'installed_elf', 'ordinary_release_launch',
+REQUIRED = {'native_boulder_build', 'native_moss_install', 'native_moss_upgrade', 'installed_elf', 'bundled_im_cache', 'ordinary_release_launch',
             'jellyfin_sign_in', 'dv_default_on', 'fallback_default_on', 'visible_h264', 'pause', 'seek', 'fullscreen'}
 
 
@@ -78,9 +78,25 @@ def plan(sha, good, status, run_number, time):
 
 def reconcile():
     refresh()
-    sha = api(f'repos/{CANONICAL}/commits/main')['sha']
+    run(['gh', 'workflow', 'enable', 'reconcile.yml', '-R', CHANNEL])
+    latest = api(f'repos/{CANONICAL}/commits/main')['sha']
+    sha = os.environ.get('REQUESTED_SOURCE_SHA') or latest
+    if sha != latest and (not re.fullmatch('[0-9a-f]{40}', sha) or not is_ancestor(sha, latest)):
+        raise ValueError('Requested source is not an immutable canonical main ancestor')
     good = read('sync-state/last-good.json', {})
     status = read('sync-state/status.json', {})
+    if good.get('source_sha') and not is_ancestor(good['source_sha'], sha):
+        raise RuntimeError('Refusing a source older than the current feed')
+    observed = read('sync-state/reconciliation.json', {})
+    previous_time = dt.datetime.fromisoformat(observed['observed_at']) if observed.get('observed_at') else None
+    if previous_time is None or now() - previous_time >= dt.timedelta(days=7):
+        if good.get('tag'):
+            release = api(f'repos/{CHANNEL}/releases/tags/{good["tag"]}')
+            if release['draft']:
+                raise RuntimeError('Last good release unexpectedly became a draft')
+        write('sync-state/reconciliation.json', {'canonical_main_sha': latest, 'published_source_sha': good.get('source_sha'),
+                                               'observed_at': now().isoformat(), 'last_good_release_available': bool(good.get('tag'))})
+        commit(['sync-state/reconciliation.json'], 'Record weekly canonical and last-good feed health')
     result = plan(sha, good, status, int(os.environ['GITHUB_RUN_NUMBER']), now())
     if result['build']:
         write('sync-state/status.json', {**result, 'phase': 'building', 'observed_at': now().isoformat(),
@@ -120,21 +136,27 @@ def validated(directory):
     return q, assets
 
 
+def promotion_allowed(candidate, good, main, ancestry):
+    if good.get('source_sha') == candidate['source_sha']:
+        return False
+    if good.get('source_sha') and not ancestry(good['source_sha'], candidate['source_sha']):
+        raise RuntimeError('Refusing stale or divergent source promotion')
+    if not ancestry(candidate['source_sha'], main):
+        raise RuntimeError('Qualified source is no longer on canonical main')
+    if candidate['release'] <= int(good.get('release', 1)):
+        raise RuntimeError('Package release would not advance monotonically')
+    return True
+
+
 def publish(directory):
     directory = Path(directory).resolve()
     q, assets = validated(directory)
     refresh()
     good = read('sync-state/last-good.json', {})
-    if good.get('source_sha') == q['source_sha']:
+    main = api(f'repos/{CANONICAL}/commits/main')['sha']
+    if not promotion_allowed(q, good, main, is_ancestor):
         print('This source is already published')
         return
-    if good.get('source_sha') and not is_ancestor(good['source_sha'], q['source_sha']):
-        raise RuntimeError('Refusing stale or divergent source promotion')
-    main = api(f'repos/{CANONICAL}/commits/main')['sha']
-    if not is_ancestor(q['source_sha'], main):
-        raise RuntimeError('Qualified source is no longer on canonical main')
-    if q['release'] <= int(good.get('release', 1)):
-        raise RuntimeError('Package release would not advance monotonically')
     tag = q['tag']
     result = subprocess.run(['gh', 'release', 'view', tag, '-R', CHANNEL, '--json', 'isDraft,assets,url'], capture_output=True, text=True)
     if result.returncode:
@@ -167,18 +189,27 @@ def publish(directory):
     with tarfile.open(directory / 'recipe.tar.gz') as archive:
         if any((p.name != 'recipe' and not p.name.startswith('recipe/')) or p.issym() or p.islnk() or '..' in Path(p.name).parts for p in archive.getmembers()):
             raise ValueError('Unsafe recipe handoff')
+        # This is an isolated Actions checkout; retire obsolete tracked recipe helpers.
+        if Path('recipe').exists():
+            shutil.rmtree('recipe')
         archive.extractall('.', filter='data')
     write('sync-state/last-good.json', {**q, 'published_at': now().isoformat(), 'release_url': release['html_url'],
                                       'feed_url': f'https://github.com/{CHANNEL}/raw/refs/heads/main/feed/stone.index',
                                       'release_feed_url': f'https://github.com/{CHANNEL}/releases/download/{tag}/stone.index', 'assets': assets})
     write('sync-state/status.json', {'source_sha': q['source_sha'], 'phase': 'published', 'published_at': now().isoformat()})
     shutil.copyfile(directory / 'qualification.json', 'qualification.json')
-    commit(['feed/stone.index', 'recipe', 'qualification.json', 'sync-state'], 'Promote qualified canonical main ' + q['source_sha'][:12])
+    readme = Path('README.md')
+    readme.write_text(readme.read_text().replace(
+        'https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index',
+        f'https://github.com/{CHANNEL}/raw/refs/heads/main/feed/stone.index'))
+    commit(['feed/stone.index', 'recipe', 'qualification.json', 'sync-state', 'README.md'], 'Promote qualified canonical main ' + q['source_sha'][:12])
     print('Published and atomically promoted ' + tag)
 
 
 def fail(sha):
     refresh()
+    if read('sync-state/last-good.json', {}).get('source_sha') == sha:
+        return
     status = read('sync-state/status.json', {})
     if status.get('source_sha') != sha:
         return

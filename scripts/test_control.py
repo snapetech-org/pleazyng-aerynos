@@ -34,6 +34,34 @@ class PlanningTests(unittest.TestCase):
                 control.plan(value, {}, {}, 1, self.time)
 
 
+class PromotionTests(unittest.TestCase):
+    def relation(self, old, new):
+        chain = ['a' * 40, 'b' * 40, 'c' * 40]
+        return old in chain and new in chain and chain.index(old) <= chain.index(new)
+
+    def test_same_app_version_advances_release_and_source(self):
+        candidate = {'source_sha': 'b' * 40, 'release': 3, 'version': '3.0.22+181'}
+        good = {'source_sha': 'a' * 40, 'release': 2, 'version': '3.0.22+181'}
+        self.assertTrue(control.promotion_allowed(candidate, good, 'c' * 40, self.relation))
+
+    def test_older_build_cannot_replace_newer_feed_even_with_larger_release(self):
+        with self.assertRaises(RuntimeError):
+            control.promotion_allowed({'source_sha': 'a' * 40, 'release': 99},
+                                      {'source_sha': 'b' * 40, 'release': 3}, 'c' * 40, self.relation)
+
+    def test_divergent_or_abandoned_source_cannot_publish(self):
+        with self.assertRaises(RuntimeError):
+            control.promotion_allowed({'source_sha': 'd' * 40, 'release': 4},
+                                      {'source_sha': 'b' * 40, 'release': 3}, 'c' * 40, self.relation)
+
+    def test_duplicate_is_a_noop_and_package_identity_cannot_repeat(self):
+        self.assertFalse(control.promotion_allowed({'source_sha': 'b' * 40, 'release': 3},
+                                                  {'source_sha': 'b' * 40, 'release': 3}, 'c' * 40, self.relation))
+        with self.assertRaises(RuntimeError):
+            control.promotion_allowed({'source_sha': 'c' * 40, 'release': 3},
+                                      {'source_sha': 'b' * 40, 'release': 3}, 'c' * 40, self.relation)
+
+
 class HandoffTests(unittest.TestCase):
     def handoff(self, root):
         stone = 'pleazyng-3.0.22-2-1-x86_64.stone'

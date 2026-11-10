@@ -1,0 +1,93 @@
+name: Synchronize qualified aerynOS channel
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Optional full main ancestor SHA for bootstrap/recovery; empty selects current main
+        type: string
+        required: false
+      producer_run_id:
+        description: Optional existing canonical candidate run for that exact source; empty builds automatically
+        type: string
+        required: false
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: aerynos-qualified-feed
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    outputs:
+      build: ${{ steps.plan.outputs.build }}
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      release: ${{ steps.plan.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Validate controller
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Resolve canonical main and preserve last-good state
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_SOURCE_SHA: ${{ inputs.source_sha }}
+        run: python3 scripts/control.py reconcile
+  build:
+    needs: plan
+    if: needs.plan.outputs.build == 'true' && inputs.producer_run_id == ''
+    permissions:
+      contents: read
+    uses: snapetech-org/pleazyng/.github/workflows/aerynos-candidate.yml@main
+    with:
+      source_sha: ${{ needs.plan.outputs.source_sha }}
+  qualify:
+    needs: [plan, build]
+    if: ${{ always() && needs.plan.outputs.build == 'true' && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.producer_run_id != '')) }}
+    permissions:
+      contents: read
+      actions: read
+    uses: snapetech-org/pleazyng/.github/workflows/aerynos-qualify.yml@main
+    with:
+      source_sha: ${{ needs.plan.outputs.source_sha }}
+      release: ${{ fromJSON(needs.plan.outputs.release || '2') }}
+      producer_run_id: ${{ inputs.producer_run_id || '' }}
+  publish:
+    needs: [plan, qualify]
+    if: needs.qualify.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: aerynos-qualified-${{ needs.plan.outputs.source_sha }}
+          path: ${{ runner.temp }}/qualified
+      - name: Publish immutable assets and atomically promote feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/control.py publish "$RUNNER_TEMP/qualified"
+  retain-last-good:
+    needs: [plan, build, qualify, publish]
+    if: ${{ always() && needs.plan.outputs.build == 'true' && needs.publish.result != 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Record failure without changing the feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.plan.outputs.source_sha }}
+        run: python3 scripts/control.py fail "$SOURCE_SHA"
