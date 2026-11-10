@@ -106,6 +106,15 @@ class HandoffTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 control.validated(root)
 
+    def test_false_gate_mapping_is_not_accepted_as_passed_checks(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            q = self.handoff(root)
+            q['checks'] = {check: False for check in control.REQUIRED}
+            (root / 'qualification.json').write_text(json.dumps(q))
+            with self.assertRaises(RuntimeError):
+                control.validated(root)
+
     def test_modified_native_package_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

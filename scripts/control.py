@@ -115,9 +115,12 @@ def reconcile():
 def validated(directory):
     directory = Path(directory)
     q = read(directory / 'qualification.json')
-    if q.get('status') != 'qualified' or not REQUIRED.issubset(q.get('checks', [])):
+    checks = q.get('checks')
+    if (q.get('status') != 'qualified' or not isinstance(checks, list)
+            or any(not isinstance(check, str) for check in checks)
+            or not REQUIRED.issubset(checks)):
         raise RuntimeError('Required native qualification is incomplete')
-    if not re.fullmatch('[0-9a-f]{40}', q['source_sha']) or int(q['release']) < 2:
+    if not re.fullmatch('[0-9a-f]{40}', q['source_sha']) or type(q['release']) is not int or q['release'] < 2:
         raise ValueError('Invalid qualified source/release')
     expected_tag = f'main-{q["source_sha"][:12]}-r{q["release"]}'
     if q['tag'] != expected_tag:
