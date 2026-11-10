@@ -111,6 +111,37 @@ class ReleaseDeliveryTests(unittest.TestCase):
         self.assertIn('retry_after', attempt)
         commit.assert_called_once()
 
+    def test_public_install_retry_never_rebuilds_an_already_published_app(self):
+        receipt = {'source_sha': 'a' * 40}
+        result = releases.pending_public({'v3.0.30': receipt})
+        self.assertFalse(result['build'])
+        self.assertTrue(result['verify_public'])
+        receipt['public_verification'] = {'status': 'failed', 'retry_after': '2099-01-01T00:00:00+00:00'}
+        self.assertFalse(releases.pending_public({'v3.0.30': receipt})['verify_public'])
+        self.assertTrue(releases.pending_public({'v3.0.30': receipt}, retry=True)['verify_public'])
+        receipt['public_verification'] = {'status': 'passed'}
+        self.assertIsNone(releases.pending_public({'v3.0.30': receipt}))
+
+    def test_public_receipt_cannot_claim_pass_without_exact_package_and_checks(self):
+        receipt = {'source_sha': 'a' * 40, 'version': '3.0.30+189', 'release': 3,
+                   'channel_tag': 'main-' + 'a' * 12 + '-r3'}
+        env = {'GITHUB_SERVER_URL': 'https://github.com', 'GITHUB_RUN_ID': '42'}
+        with tempfile.TemporaryDirectory() as temporary:
+            report = Path(temporary) / 'public.json'
+            report.write_text(json.dumps({'status': 'passed', 'source_sha': 'a' * 40,
+                                         'version': '3.0.30+189', 'release': 3,
+                                         'tag': receipt['channel_tag'], 'checks': []}))
+            with patch.dict(releases.os.environ, env), patch.object(control, 'refresh'), \
+                    patch.object(control, 'read', return_value={'v3.0.30': receipt}), \
+                    patch.object(control, 'write') as write, patch.object(control, 'commit'):
+                with self.assertRaises(ValueError):
+                    releases.record_public('v3.0.30', 'a' * 40, report)
+                write.assert_not_called()
+                releases.record_public('v3.0.30', 'a' * 40)
+                failed = write.call_args.args[1]['v3.0.30']['public_verification']
+                self.assertEqual(failed['status'], 'failed')
+                self.assertIn('retry_after', failed)
+
     def test_core_assembler_must_be_successful_trusted_and_exact(self):
         metadata = {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/build.yml',
                     'head_sha': 'b' * 40, 'status': 'completed', 'conclusion': 'success',

@@ -125,6 +125,19 @@ def next_release(good, status, run_number):
                int(status.get('release', 1)) + 1)
 
 
+def pending_public(receipts, retry=False):
+    pending = [(tag, receipt) for tag, receipt in receipts.items()
+               if receipt.get('public_verification', {}).get('status') != 'passed']
+    if not pending:
+        return None
+    tag, receipt = min(pending, key=lambda item: version(item[0]))
+    after = receipt.get('public_verification', {}).get('retry_after')
+    ready = retry or not after or control.now() >= dt.datetime.fromisoformat(after)
+    return {'build': False, 'verify_public': bool(ready), 'core_tag': tag,
+            'source_sha': receipt['source_sha'],
+            'reason': 'public-install-pending' if ready else 'public-install-backoff'}
+
+
 def reconcile():
     control.refresh()
     latest = mirror_main()
@@ -132,6 +145,10 @@ def reconcile():
         emit({'build': False, 'reason': 'owner-hold'})
         return
     receipts = control.read('sync-state/releases.json', {})
+    pending = pending_public(receipts, retry=os.environ.get('MANUAL_RETRY') == 'true')
+    if pending:
+        emit(pending)
+        return
     pages = json.loads(control.run(['gh', 'api', '--paginate', '--slurp',
                                     f'repos/{control.CANONICAL}/releases?per_page=100']).stdout)
     attempts = control.read('sync-state/release-attempts.json', {})
@@ -173,7 +190,7 @@ def reconcile():
         control.write('sync-state/release-attempts.json', attempts)
         control.commit(['sync-state/release-attempts.json'], 'Record unresolved core delivery ' + release['tag_name'])
         raise
-    result = {**candidate, 'build': True, 'release': next_release(good, control.read('sync-state/status.json', {}),
+    result = {**candidate, 'build': True, 'verify_public': True, 'release': next_release(good, control.read('sync-state/status.json', {}),
                                                         int(os.environ['GITHUB_RUN_NUMBER']))}
     control.write('sync-state/status.json', {**result, 'phase': 'building', 'observed_at': control.now().isoformat()})
     control.commit(['sync-state/status.json'], 'Qualify published core release ' + release['tag_name'])
@@ -225,12 +242,43 @@ def bind_qualified(directory):
     return receipt
 
 
+def record_public(tag, source, report_path=None):
+    control.refresh()
+    receipts = control.read('sync-state/releases.json', {})
+    receipt = receipts.get(tag)
+    if not receipt or receipt['source_sha'] != source:
+        raise ValueError('Public verification does not match a published channel receipt')
+    run_url = os.environ['GITHUB_SERVER_URL'] + '/' + control.CHANNEL + '/actions/runs/' + os.environ['GITHUB_RUN_ID']
+    if report_path is None:
+        verification = {'status': 'failed', 'run_url': run_url, 'failed_at': control.now().isoformat(),
+                        'retry_after': (control.now() + dt.timedelta(minutes=30)).isoformat()}
+    else:
+        report = json.loads(report_path.read_text())
+        required = {'anonymous_live_index_digest', 'anonymous_pinned_index_digest', 'native_live_moss_install',
+                    'native_pinned_moss_reinstall', 'ordinary_launch', 'runtime_source_version'}
+        if (report.get('status') != 'passed' or report.get('source_sha') != source
+                or report.get('tag') != receipt['channel_tag'] or report.get('version') != receipt['version']
+                or report.get('release') != receipt['release'] or not isinstance(report.get('checks'), list)
+                or not required.issubset(report['checks'])):
+            raise ValueError('Public installation checks are incomplete or refer to another package')
+        verification = {**report, 'run_url': run_url, 'verified_at': control.now().isoformat(),
+                        'report_sha256': hashlib.sha256(report_path.read_bytes()).hexdigest()}
+    receipt['public_verification'] = verification
+    control.write('sync-state/releases.json', receipts)
+    control.commit(['sync-state/releases.json'], 'Record public aerynOS installation ' + tag)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['reconcile', 'bind'])
+    parser.add_argument('command', choices=['reconcile', 'bind', 'record-public'])
     parser.add_argument('directory', nargs='?', type=Path)
+    parser.add_argument('--core-tag')
+    parser.add_argument('--source-sha')
+    parser.add_argument('--report', type=Path)
     args = parser.parse_args()
     if args.command == 'reconcile':
         reconcile()
-    else:
+    elif args.command == 'bind':
         bind_qualified(args.directory)
+    else:
+        record_public(args.core_tag, args.source_sha, args.report)

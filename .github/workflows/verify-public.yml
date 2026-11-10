@@ -1,0 +1,84 @@
+name: Verify public aerynOS installation
+on:
+  workflow_call:
+    inputs:
+      source_sha:
+        type: string
+        required: true
+      core_tag:
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: snapetech-org/pleazyng
+          ref: main
+          path: tooling
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Validate public installation controller
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Install official guest tools
+        run: |
+          sudo python3 tooling/scripts/configure_hosted_apt.py '${{ runner.environment }}'
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y -o Acquire::Retries=3 qemu-system-x86 ovmf systemd-boot-efi \
+            squashfs-tools libarchive-tools dosfstools mtools e2fsprogs openssh-client \
+            python3-pil tesseract-ocr
+          test -e /dev/kvm
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/pleazyng-aerynos/iso
+          key: aerynos-iso-e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419
+      - name: Fetch checksum-pinned official ISO
+        run: |
+          mkdir -p "$HOME/.cache/pleazyng-aerynos/iso"
+          iso="$HOME/.cache/pleazyng-aerynos/iso/aerynOS-2026.11-GNOME-live-x86_64.iso"
+          if [[ ! -f "$iso" ]]; then
+            curl -fL --retry 5 --retry-all-errors https://cdn.aerynos.dev/isos/aerynOS-2026.11-GNOME-live-x86_64.iso -o "$iso"
+          fi
+          echo "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419  $iso" | sha256sum --check
+      - name: Install anonymously from both public feeds and launch
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          python3 scripts/public_install.py --source-sha "$SOURCE_SHA" --tooling tooling \
+            --scratch "$RUNNER_TEMP/public-vm" --output "$RUNNER_TEMP/public-install" \
+            --iso "$HOME/.cache/pleazyng-aerynos/iso/aerynOS-2026.11-GNOME-live-x86_64.iso"
+      - name: Record verified public installation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_TAG: ${{ inputs.core_tag }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          python3 scripts/releases.py record-public --core-tag "$CORE_TAG" --source-sha "$SOURCE_SHA" \
+            --report "$RUNNER_TEMP/public-install/public-install.json"
+      - name: Preserve failed public installation for retry
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_TAG: ${{ inputs.core_tag }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: python3 scripts/releases.py record-public --core-tag "$CORE_TAG" --source-sha "$SOURCE_SHA"
+      - name: Retain public installation evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: aerynos-public-install-${{ inputs.source_sha }}
+          path: |
+            ${{ runner.temp }}/public-install/
+            ${{ runner.temp }}/public-vm/vm/serial.log
+            ${{ runner.temp }}/public-vm/vm/qemu.log
+          if-no-files-found: warn
+          retention-days: 30

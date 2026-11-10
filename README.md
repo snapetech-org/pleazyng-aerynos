@@ -84,7 +84,9 @@ updates source metadata without compiling it or changing the package feed.
 This remains distinct from the original Linux build source and final release
 assembler recorded in each delivery receipt.
 
-The delivery controller checks published canonical releases every five minutes,
+The canonical release controller wakes this consumer after core publication;
+the five-minute schedule also catches pending deliveries. The delivery controller
+checks published canonical releases every five minutes,
 subject to GitHub scheduling and runner availability. It processes releases from
 3.0.29 onward in version order. It verifies the attested release checksums and successful final core workflow,
 then verifies the published Linux archive and its original compiler attestation, then reuses the original core Linux artifact. It never recompiles
@@ -94,6 +96,12 @@ Every candidate must pass a fresh native aerynOS Boulder build, Moss install and
 upgrade, dependency checks, sign-in, visible playback and audio, pause, seek,
 fullscreen, background return, saved-position resume and bookmark resume.
 Only then are immutable package assets published and the feed advanced.
+After promotion, a second fresh native guest installs anonymously from the live
+feed, removes and reinstalls from the pinned release feed, and launches the app.
+It verifies the index digests, installed package version and runtime source.
+The public-install result is recorded in the release receipt, with logs and
+screenshots retained by Actions. A failed public-install check retries that
+check after thirty minutes without compiling or repackaging the app.
 A failed candidate leaves the previous feed available and retries after thirty
 minutes. Resolution failures are recorded too, and a new release remains eligible
 while an older delivery backs off. Once a newer release is qualified, older

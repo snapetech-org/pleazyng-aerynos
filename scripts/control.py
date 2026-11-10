@@ -187,7 +187,7 @@ def publish(directory):
                                       'feed_url': f'https://github.com/{CHANNEL}/raw/refs/heads/main/feed/stone.index',
                                       'release_feed_url': f'https://github.com/{CHANNEL}/releases/download/{tag}/stone.index', 'assets': assets})
     receipts = read('sync-state/releases.json', {})
-    receipts[core['tag']] = {**core, 'channel_tag': tag, 'channel_url': release['html_url'],
+    receipts[core['tag']] = {**core, 'version': q['version'], 'release': q['release'], 'channel_tag': tag, 'channel_url': release['html_url'],
                              'published_at': now().isoformat()}
     write('sync-state/releases.json', receipts)
     write('sync-state/status.json', {'source_sha': q['source_sha'], 'core_tag': core['tag'],

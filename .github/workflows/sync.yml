@@ -25,6 +25,7 @@ jobs:
       attestations: read
     outputs:
       build: ${{ steps.plan.outputs.build }}
+      verify_public: ${{ steps.plan.outputs.verify_public }}
       source_sha: ${{ steps.plan.outputs.source_sha }}
       core_producer_run_id: ${{ steps.plan.outputs.core_producer_run_id }}
       core_tag: ${{ steps.plan.outputs.core_tag }}
@@ -116,3 +117,13 @@ jobs:
         run: |
           python3 scripts/control.py fail "$SOURCE_SHA"
           exit 1
+
+  verify-public:
+    needs: [plan, publish]
+    if: ${{ always() && needs.plan.outputs.verify_public == 'true' && (needs.publish.result == 'success' || (needs.plan.outputs.build != 'true' && needs.publish.result == 'skipped')) }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/verify-public.yml
+    with:
+      source_sha: ${{ needs.plan.outputs.source_sha }}
+      core_tag: ${{ needs.plan.outputs.core_tag }}
