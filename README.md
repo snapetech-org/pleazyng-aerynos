@@ -20,6 +20,11 @@ upgrade an installed version. Each snapshot also supplies a versioned
 [last-good receipt](sync-state/last-good.json) records the current qualified
 source and feed URLs.
 
+When moving from a pinned snapshot to the live feed, remove the old repository
+entry with `sudo moss repo remove pleazyng-aerynos`, then repeat the `repo add`
+command shown above. Removing the repository entry leaves the installed app in
+place; `moss sync` performs the upgrade.
+
 The initial seed passed public feed fetch, checksum comparison, removal/reinstall
 and ordinary relaunch; see its [seed receipt](seed-publication-receipt.json).
 Current source and per-snapshot checks appear in the last-good receipt.
@@ -131,9 +136,8 @@ supported. See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actio
 [delivery status](sync-state/status.json), and
 [completed release receipts](sync-state/releases.json).
 
-The current install command remains pinned to the tested seed until the first
-new qualified package promotes the live feed. No official aerynOS repository
-submission is part of this independent distribution channel.
+No official aerynOS repository submission is part of this independent
+distribution channel.
 
 ## Hold and resume delivery
 
