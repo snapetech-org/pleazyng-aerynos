@@ -172,7 +172,8 @@ def bind_qualified(directory):
             raise ValueError('Reused native QA must be a successful trusted canonical qualification run')
     tag = os.environ['CORE_TAG']
     release = control.api(f'repos/{control.CANONICAL}/releases/tags/{tag}')
-    if release.get('draft') or not release.get('published_at') or str(release['id']) != os.environ['CORE_RELEASE_ID']:
+    if (release.get('tag_name') != tag or release.get('draft') or not release.get('published_at')
+            or str(release['id']) != os.environ['CORE_RELEASE_ID']):
         raise ValueError('Core release is not the approved published release')
     completed_core(os.environ['CORE_SOURCE_SHA'], os.environ['CORE_RUN_ID'])
     asset = linux_asset(release)

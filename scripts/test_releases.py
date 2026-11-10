@@ -47,7 +47,7 @@ class ReleaseDeliveryTests(unittest.TestCase):
         release = self.release()
         releases.linux_asset(release)
         for assets in [[], release['assets'] * 2, [{'name': 'pleazyng-linux-x64.tar.gz', 'digest': None}]]:
-            with self.subTest(assets=assets), self.assertRaises((ValueError, TypeError)):
+            with self.subTest(assets=assets), self.assertRaises(ValueError):
                 releases.linux_asset({**release, 'assets': assets})
 
     def test_hold_prevents_even_release_lookup_and_download(self):
@@ -117,6 +117,19 @@ class ReleaseDeliveryTests(unittest.TestCase):
                 patch.object(control, 'write') as write:
             releases.mirror_main()
         write.assert_not_called()
+
+    def test_reuse_never_accepts_untrusted_or_incomplete_native_run(self):
+        q = {'source_sha': 'a' * 40}
+        env = {'SOURCE_SHA': 'a' * 40, 'QUALIFIED_RUN_ID': '42'}
+        with patch.dict(releases.os.environ, env), patch.object(control, 'validated', return_value=(q, {})):
+            for metadata in [
+                    {'repository': {'id': 99}},
+                    {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/aerynos-qualify.yml',
+                     'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': 'failure'},
+                    {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/other.yml',
+                     'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': 'success'}]:
+                with self.subTest(metadata=metadata), patch.object(control, 'api', return_value=metadata), self.assertRaises(ValueError):
+                    releases.bind_qualified(Path('unused'))
 
     def test_binding_checks_published_bytes_version_and_original_producer(self):
         q = {'source_sha': 'a' * 40, 'version': '3.0.29+188', 'build': {

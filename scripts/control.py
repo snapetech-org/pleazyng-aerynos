@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reconcile canonical main and atomically promote only qualified immutable snapshots."""
+"""Validate native packages and atomically promote immutable aerynOS releases."""
 from __future__ import annotations
 import argparse
 import datetime as dt
@@ -132,7 +132,7 @@ def publish(directory):
     result = subprocess.run(['gh', 'release', 'view', tag, '-R', CHANNEL, '--json', 'isDraft,assets,url'], capture_output=True, text=True)
     if result.returncode:
         notes = directory / 'release-notes.md'
-        notes.write_text(f'Independent aerynOS main snapshot {q["version"]}, source {q["source_sha"]}, package release {q["release"]}. '
+        notes.write_text(f'Independent aerynOS package {q["version"]}, source {q["source_sha"]}, package release {q["release"]}. '
                          'Native build/install and ordinary release-app checks pass. Physical HDR/FEL picture accuracy remains unqualified. '
                          'This channel release is separate from the all-platform core application release. See qualification.json and source archive.\n')
         run(['gh', 'release', 'create', tag, '-R', CHANNEL, '--draft', '--prerelease', '--target', 'main',
@@ -178,7 +178,7 @@ def publish(directory):
     readme.write_text(readme.read_text().replace(
         'https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index',
         f'https://github.com/{CHANNEL}/raw/refs/heads/main/feed/stone.index'))
-    commit(['feed/stone.index', 'recipe', 'qualification.json', 'sync-state', 'README.md'], 'Promote qualified canonical main ' + q['source_sha'][:12])
+    commit(['feed/stone.index', 'recipe', 'qualification.json', 'sync-state', 'README.md'], 'Promote qualified core release ' + core['tag'])
     print('Published and atomically promoted ' + tag)
 
 
