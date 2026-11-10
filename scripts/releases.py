@@ -118,6 +118,13 @@ def mirror_main():
     return latest
 
 
+def next_release(good, status, run_number):
+    # Scheduled and manual workflows have separate run counters. Reserve above
+    # every recorded attempt so retries cannot collide with immutable uploads.
+    return max(run_number + 1, int(good.get('release', 1)) + 1,
+               int(status.get('release', 1)) + 1)
+
+
 def reconcile():
     control.refresh()
     latest = mirror_main()
@@ -166,8 +173,8 @@ def reconcile():
         control.write('sync-state/release-attempts.json', attempts)
         control.commit(['sync-state/release-attempts.json'], 'Record unresolved core delivery ' + release['tag_name'])
         raise
-    result = {**candidate, 'build': True, 'release': max(int(os.environ['GITHUB_RUN_NUMBER']) + 1,
-                                                       int(good.get('release', 1)) + 1)}
+    result = {**candidate, 'build': True, 'release': next_release(good, control.read('sync-state/status.json', {}),
+                                                        int(os.environ['GITHUB_RUN_NUMBER']))}
     control.write('sync-state/status.json', {**result, 'phase': 'building', 'observed_at': control.now().isoformat()})
     control.commit(['sync-state/status.json'], 'Qualify published core release ' + release['tag_name'])
     emit(result)

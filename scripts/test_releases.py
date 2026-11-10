@@ -43,6 +43,11 @@ class ReleaseDeliveryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             releases.producer_from_verification(good + other)
 
+    def test_package_counter_survives_failed_uploads_and_different_workflow_counters(self):
+        self.assertEqual(releases.next_release({'release': 4}, {'release': 12, 'phase': 'failed'}, 2), 13)
+        self.assertEqual(releases.next_release({'release': 14}, {'release': 12}, 2), 15)
+        self.assertEqual(releases.next_release({}, {}, 20), 21)
+
     def test_release_requires_unique_digest_bound_linux_asset(self):
         release = self.release()
         releases.linux_asset(release)
