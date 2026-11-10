@@ -1,8 +1,8 @@
 {
-  "active": true,
-  "reason": "Verify serialized maintenance hold before automatic release delivery",
+  "active": false,
+  "reason": "Serialized hold roundtrip verified; resume automatic qualified core-release delivery",
   "source_schedule": "metadata tracking only; application source compilation disabled",
   "native_qa": "required for exact original core Linux bytes",
-  "public_promotion": "held",
-  "updated_at": "2026-11-10T15:39:58.603977+00:00"
+  "public_promotion": "requires complete published core and exact-byte native QA",
+  "updated_at": "2026-11-10T15:41:40.686241+00:00"
 }
