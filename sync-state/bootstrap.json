@@ -9,7 +9,7 @@
     "required_candidate_gate_set": "native-lifecycle-v1",
     "next_candidate_release_checkpoint": "awaiting-owner-final-canonical-target"
   },
-  "reason": "Owner hold: one coordinated build iteration. No source producer dispatch or public promotion until the release coordinator supplies the final canonical checkpoint. Existing native QA may finish as evidence. The baseline checkpoint marker intentionally rejects handoffs created before this hold.",
+  "reason": "First automatic delivery must use the exact reviewed seed baseline and canonical source floor, then pass complete-published-core and native release qualification gates. Historical baseline checkpoint fields remain identical so the authorized native preflight can be reused.",
   "legacy_candidate_provenance": {
     "source_sha": "e2d60f54e7faae36458dd2460932b7ff44700934",
     "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/42735709595",

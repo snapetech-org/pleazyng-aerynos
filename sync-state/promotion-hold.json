@@ -1,7 +1,7 @@
 {
-  "active": true,
-  "reason": "Owner requires one coordinated build iteration; await final canonical source/release checkpoint from the sole release dispatcher.",
-  "source_schedule": "disabled",
-  "native_qa": "running work may finish as evidence; no new dispatch",
-  "public_promotion": "held"
+  "active": false,
+  "reason": "Owner authorized automatic release delivery. Only published core releases with a successful attested assembler and exact-byte native aerynOS qualification may promote.",
+  "source_schedule": "metadata tracking only; application source compilation disabled",
+  "native_qa": "required for exact original core Linux bytes",
+  "public_promotion": "requires complete published core, verified original producer and passing native QA"
 }
