@@ -1,7 +1,8 @@
 {
-  "active": false,
-  "reason": "Owner authorized automatic release delivery. Only published core releases with a successful attested assembler and exact-byte native aerynOS qualification may promote.",
+  "active": true,
+  "reason": "Verify serialized maintenance hold before automatic release delivery",
   "source_schedule": "metadata tracking only; application source compilation disabled",
   "native_qa": "required for exact original core Linux bytes",
-  "public_promotion": "requires complete published core, verified original producer and passing native QA"
+  "public_promotion": "held",
+  "updated_at": "2026-11-10T15:39:58.603977+00:00"
 }
