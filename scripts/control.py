@@ -87,6 +87,10 @@ def reconcile():
     status = read('sync-state/status.json', {})
     if good.get('source_sha') and not is_ancestor(good['source_sha'], sha):
         raise RuntimeError('Refusing a source older than the current feed')
+    if not good.get('source_sha'):
+        bootstrap = read('sync-state/bootstrap.json')
+        if not bootstrap or not is_ancestor(bootstrap['canonical_floor_sha'], sha):
+            raise RuntimeError('Requested source predates the reviewed bootstrap floor')
     observed = read('sync-state/reconciliation.json', {})
     previous_time = dt.datetime.fromisoformat(observed['observed_at']) if observed.get('observed_at') else None
     if previous_time is None or now() - previous_time >= dt.timedelta(days=7):
@@ -136,7 +140,13 @@ def validated(directory):
     return q, assets
 
 
-def promotion_allowed(candidate, good, main, ancestry):
+def promotion_allowed(candidate, good, main, ancestry, bootstrap=None):
+    if not good.get('source_sha'):
+        if not bootstrap or not ancestry(bootstrap['canonical_floor_sha'], candidate['source_sha']):
+            raise RuntimeError('First promotion predates the reviewed canonical bootstrap floor')
+        for receipt in (good, candidate.get('baseline', {})):
+            if any(receipt.get(key) != value for key, value in bootstrap['seed'].items()):
+                raise RuntimeError('First promotion must upgrade the exact reviewed seed')
     if good.get('source_sha') == candidate['source_sha']:
         return False
     if good.get('source_sha') and not ancestry(good['source_sha'], candidate['source_sha']):
@@ -154,7 +164,7 @@ def publish(directory):
     refresh()
     good = read('sync-state/last-good.json', {})
     main = api(f'repos/{CANONICAL}/commits/main')['sha']
-    if not promotion_allowed(q, good, main, is_ancestor):
+    if not promotion_allowed(q, good, main, is_ancestor, read('sync-state/bootstrap.json')):
         print('This source is already published')
         return
     tag = q['tag']

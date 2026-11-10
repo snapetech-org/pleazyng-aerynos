@@ -61,6 +61,19 @@ class PromotionTests(unittest.TestCase):
             control.promotion_allowed({'source_sha': 'c' * 40, 'release': 3},
                                       {'source_sha': 'b' * 40, 'release': 3}, 'c' * 40, self.relation)
 
+    def test_first_promotion_requires_reviewed_floor_and_exact_seed_upgrade(self):
+        seed = {'source_sha': None, 'legacy_source_sha': 'd' * 40,
+                'tag': 'seed', 'release': 1, 'stone_sha256': 'e' * 64}
+        bootstrap = {'canonical_floor_sha': 'b' * 40, 'seed': seed}
+        q = {'source_sha': 'b' * 40, 'release': 2, 'baseline': dict(seed)}
+        self.assertTrue(control.promotion_allowed(q, seed, 'c' * 40, self.relation, bootstrap))
+        for change in ({'source_sha': 'a' * 40}, {'baseline': {}},
+                       {'baseline': {**seed, 'stone_sha256': 'f' * 64}}):
+            with self.subTest(change=change), self.assertRaises(RuntimeError):
+                control.promotion_allowed({**q, **change}, seed, 'c' * 40, self.relation, bootstrap)
+        with self.assertRaises(RuntimeError):
+            control.promotion_allowed(q, seed, 'c' * 40, self.relation)
+
 
 class HandoffTests(unittest.TestCase):
     def handoff(self, root):
@@ -88,7 +101,7 @@ class HandoffTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             q = self.handoff(root)
-            q['checks'].remove('native_moss_upgrade')
+            q['checks'].remove('bundled_im_cache')
             (root / 'qualification.json').write_text(json.dumps(q))
             with self.assertRaises(RuntimeError):
                 control.validated(root)
