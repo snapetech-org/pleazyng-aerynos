@@ -1,5 +1,5 @@
 {
-  "canonical_floor_sha": "e2d60f54e7faae36458dd2460932b7ff44700934",
+  "canonical_floor_sha": "2ef9f3101bc99354de93637f84bb5c698c3187fc",
   "seed": {
     "source_sha": null,
     "legacy_source_sha": "a13b139cd75b8521deedb8dc8ee00928754aac11",
@@ -8,11 +8,12 @@
     "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
     "required_candidate_gate_set": "native-lifecycle-v1"
   },
-  "reason": "Reviewed initial transition from the separately qualified legacy snapshot. No canonical ancestry is claimed for its local source commit. First promotion must use this canonical-main floor or a descendant, qualify a native upgrade from these exact seed bytes, and pass all current native gates. The next candidate must also satisfy the expanded background/route/bookmark, clock and audio gate set.",
+  "reason": "Owner requires all new code in version3.0.29+188 or a later canonical descendant before first automatic promotion. Qualify all lifecycle/video/clock/audio gates and native upgrade from the exact retained seed; no ancestry is invented for the local seed source.",
   "legacy_candidate_provenance": {
     "source_sha": "e2d60f54e7faae36458dd2460932b7ff44700934",
     "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/42735709595",
     "tooling_sha": "15f9e559aabc287016cc3f9f60f8d9daa793a030",
-    "evidence": "Producer checkout log records source and tooling commits separately. Its original build.json predates the tooling_sha field; retain original bytes and use this explicit historical record. New candidate manifests record tooling_sha directly."
+    "evidence": "Producer checkout log records source and tooling commits separately. Its original build.json predates the tooling_sha field; retain original bytes and use this explicit historical record. New candidate manifests record tooling_sha directly.",
+    "debug_only": true
   }
 }
