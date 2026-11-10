@@ -62,7 +62,7 @@ class ReleaseDeliveryTests(unittest.TestCase):
             emit.assert_called_once_with({'build': False, 'reason': 'owner-hold'})
             run.assert_not_called()
 
-    def test_resolve_preserves_original_compiler_separately_from_successful_assembler(self):
+    def test_resolve_preserves_compiler_and_assembler_runs_for_same_frozen_source(self):
         payload = b'existing immutable Linux artifact; no compiler runs'
         checksum = hashlib.sha256(payload).hexdigest()
         release = self.release()
@@ -76,10 +76,10 @@ class ReleaseDeliveryTests(unittest.TestCase):
                                if name == 'SHA256SUMS.txt' else payload)
             return SimpleNamespace(stdout='')
         with patch.object(control, 'run', side_effect=download), \
-                patch.object(releases, 'verify_file', side_effect=[('b' * 40, 99), ('a' * 40, 42)]), \
-                patch.object(releases, 'completed_core') as completed:
+                patch.object(releases, 'verify_file', side_effect=[('a' * 40, 99), ('a' * 40, 42)]), \
+                patch.object(releases, 'completed_core') as completed, patch.object(releases, 'release_tag_commit', return_value='a' * 40):
             result = releases.resolve(release)
-        completed.assert_called_once_with('b' * 40, 99)
+        completed.assert_called_once_with('a' * 40, 99)
         self.assertEqual(result['source_sha'], 'a' * 40)
         self.assertEqual(result['core_producer_run_id'], 42)
         self.assertEqual(result['core_run_id'], 99)
@@ -142,6 +142,24 @@ class ReleaseDeliveryTests(unittest.TestCase):
                 self.assertEqual(failed['status'], 'failed')
                 self.assertIn('retry_after', failed)
 
+    def test_version_tag_resolves_lightweight_and_annotated_commits(self):
+        direct = {'object': {'type': 'commit', 'sha': 'a' * 40}}
+        with patch.object(control, 'api', return_value=direct):
+            self.assertEqual(releases.release_tag_commit('v3.0.30'), 'a' * 40)
+        annotated = {'object': {'type': 'tag', 'sha': 'b' * 40}}
+        with patch.object(control, 'api', side_effect=[annotated, direct]):
+            self.assertEqual(releases.release_tag_commit('v3.0.30'), 'a' * 40)
+        for invalid in [annotated, {'object': {'type': 'blob', 'sha': 'a' * 40}},
+                        {'object': {'type': 'commit', 'sha': 'main'}}]:
+            with self.subTest(invalid=invalid), patch.object(control, 'api', return_value=invalid), self.assertRaises(ValueError):
+                releases.release_tag_commit('v3.0.30')
+
+    def test_frozen_tag_binding_rejects_moved_tag_or_unproved_recovery_sources(self):
+        releases.require_frozen_source('a' * 40, 'a' * 40, 'a' * 40)
+        for compiler, assembler in [('b' * 40, 'a' * 40), ('a' * 40, 'b' * 40), ('b' * 40, 'b' * 40)]:
+            with self.subTest(compiler=compiler, assembler=assembler), self.assertRaisesRegex(ValueError, 'recovery proof'):
+                releases.require_frozen_source('a' * 40, compiler, assembler)
+
     def test_core_assembler_must_be_successful_trusted_and_exact(self):
         metadata = {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/build.yml',
                     'head_sha': 'b' * 40, 'status': 'completed', 'conclusion': 'success',
@@ -189,16 +207,16 @@ class ReleaseDeliveryTests(unittest.TestCase):
                            'producer_run_id': 42}}}
         environment = {'SOURCE_SHA': 'a' * 40, 'CORE_TAG': 'v3.0.29', 'CORE_RELEASE_ID': '11',
                        'CORE_LINUX_SHA256': 'c' * 64, 'CORE_PRODUCER_RUN_ID': '42',
-                       'CORE_RUN_ID': '99', 'CORE_SOURCE_SHA': 'b' * 40}
+                       'CORE_RUN_ID': '99', 'CORE_SOURCE_SHA': 'a' * 40}
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / 'SHA256SUMS.txt').write_text('')
-            with patch.object(releases, 'completed_core'), patch.dict(releases.os.environ, environment), patch.object(control, 'validated', return_value=(q, {'pleazyng-linux-x64.tar.gz': 'c' * 64})), \
+            with patch.object(releases, 'release_tag_commit', return_value='a' * 40), patch.object(releases, 'completed_core'), patch.dict(releases.os.environ, environment), patch.object(control, 'validated', return_value=(q, {'pleazyng-linux-x64.tar.gz': 'c' * 64})), \
                     patch.object(control, 'api', return_value=self.release()):
                 receipt = releases.bind_qualified(root)
                 self.assertEqual(receipt['linux_producer_run_id'], 42)
                 self.assertIn('core-release.json', (root / 'SHA256SUMS.txt').read_text())
-                for changed in [{'SOURCE_SHA': 'b' * 40}, {'CORE_PRODUCER_RUN_ID': '43'}, {'CORE_LINUX_SHA256': 'd' * 64},
+                for changed in [{'CORE_SOURCE_SHA': 'b' * 40}, {'SOURCE_SHA': 'b' * 40}, {'CORE_PRODUCER_RUN_ID': '43'}, {'CORE_LINUX_SHA256': 'd' * 64},
                                 {'CORE_RELEASE_ID': '12'}, {'CORE_TAG': 'v3.0.30'}]:
                     with self.subTest(changed=changed), patch.dict(releases.os.environ, changed), self.assertRaises(ValueError):
                         releases.bind_qualified(root)

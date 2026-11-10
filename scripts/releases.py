@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import urllib.parse
 import control
 
 REPOSITORY_ID = 1433487464
@@ -71,6 +72,31 @@ def completed_core(source, producer):
         raise ValueError('Attested release assembler has not completed successfully in the canonical workflow')
 
 
+def release_tag_commit(tag):
+    if version(tag) is None:
+        raise ValueError('An exact application version tag is required')
+    obj = control.api(f'repos/{control.CANONICAL}/git/ref/tags/{urllib.parse.quote(tag, safe="")}')['object']
+    seen = set()
+    for _ in range(10):
+        sha = obj.get('sha', '')
+        if not re.fullmatch('[0-9a-f]{40}', sha) or sha in seen:
+            raise ValueError('Invalid or cyclic version tag target')
+        seen.add(sha)
+        if obj.get('type') == 'commit':
+            return sha
+        if obj.get('type') != 'tag':
+            raise ValueError('Version tag must resolve to a commit')
+        obj = control.api(f'repos/{control.CANONICAL}/git/tags/{sha}')['object']
+    raise ValueError('Version tag nesting limit exceeded')
+
+
+def require_frozen_source(tag_source, compiler_source, assembler_source):
+    if compiler_source != tag_source or assembler_source != tag_source:
+        # No independently validated recovery-receipt contract is supplied to
+        # this consumer. A self-asserted receipt must not bypass exact binding.
+        raise ValueError('Version tag differs from compiler/assembler source; verified unchanged-product recovery proof is required')
+
+
 def resolve(release):
     asset = linux_asset(release)
     with tempfile.TemporaryDirectory(prefix='aerynos-release-') as temporary:
@@ -79,6 +105,8 @@ def resolve(release):
                      '--pattern', checksums.name, '--dir', temporary])
         core_source, core_run = verify_file(checksums)
         completed_core(core_source, core_run)
+        tag_source = release_tag_commit(release['tag_name'])
+        require_frozen_source(tag_source, tag_source, core_source)
         expected = [line.split()[0] for line in checksums.read_text().splitlines()
                     if len(line.split()) == 2 and line.split()[1].lstrip('*') == asset['name']]
         if expected != [asset['digest'].removeprefix('sha256:')]:
@@ -91,11 +119,12 @@ def resolve(release):
         if asset['digest'] != 'sha256:' + checksum:
             raise ValueError('Published Linux bytes differ from the GitHub release digest')
         source, producer = verify_file(bundle)
+        require_frozen_source(tag_source, source, core_source)
     # Keep original Linux compilation and successful final assembly separate.
     return {'source_sha': source, 'core_producer_run_id': producer, 'core_tag': release['tag_name'],
             'core_release_id': release['id'], 'core_linux_sha256': checksum,
             'core_release_url': release['html_url'], 'core_run_id': core_run,
-            'core_source_sha': core_source}
+            'core_source_sha': core_source, 'version_tag_source_sha': tag_source}
 
 
 def emit(result):
@@ -219,6 +248,8 @@ def bind_qualified(directory):
             or str(release['id']) != os.environ['CORE_RELEASE_ID']):
         raise ValueError('Core release is not the approved published release')
     completed_core(os.environ['CORE_SOURCE_SHA'], os.environ['CORE_RUN_ID'])
+    tag_source = release_tag_commit(tag)
+    require_frozen_source(tag_source, q['source_sha'], os.environ['CORE_SOURCE_SHA'])
     asset = linux_asset(release)
     checksum = q['build']['assets']['pleazyng-linux-x64.tar.gz']
     provenance = q['build'].get('provenance', {})
@@ -233,7 +264,7 @@ def bind_qualified(directory):
                'linux_sha256': checksum, 'source_sha': q['source_sha'],
                'linux_producer_run_id': provenance['producer_run_id'],
                'assembler_run_id': int(os.environ['CORE_RUN_ID']),
-               'assembler_source_sha': os.environ['CORE_SOURCE_SHA'],
+               'assembler_source_sha': os.environ['CORE_SOURCE_SHA'], 'version_tag_source_sha': tag_source,
                'qualification_run_id': int(reused or os.environ.get('GITHUB_RUN_ID', '0'))}
     path = directory / 'core-release.json'
     control.write(path, receipt)

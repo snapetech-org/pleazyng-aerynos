@@ -109,10 +109,15 @@ undelivered releases are recorded as superseded; they cannot roll the feed back.
 receipts prevent duplicate publication; older or divergent sources cannot replace
 newer qualified packages.
 
-For recovered core releases, the Linux package and source archive retain the
-original compiler source and producer identity. A separate `core-release.json`
-binds those bytes to the published all-platform release. It does not represent
-an overall failed original producer run as a successful core release.
+The remote version tag must resolve to the exact attested compiler and final
+assembler commit. Both lightweight and annotated tags are supported. The frozen
+commit may be an ancestor of current `main`; later development does not change
+the release identity. Original compiler and assembler run IDs remain separate
+in `core-release.json` even when their source is identical.
+
+A recovery using a different source fails closed. It requires an independently
+verified unchanged-product recovery rule; self-asserted receipt fields do not
+waive tag/source/run binding. No such exception is currently enabled here.
 
 Deployment status is recorded in [promotion-hold.json](sync-state/promotion-hold.json).
 While its hold is active, delivery does not stage or publish anything. The
