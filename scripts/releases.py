@@ -232,16 +232,8 @@ def bind_qualified(directory):
     q, qualified_assets = control.validated(directory)
     if q['source_sha'] != os.environ['SOURCE_SHA']:
         raise ValueError('Native source differs from the release plan')
-    reused = os.environ.get('QUALIFIED_RUN_ID', '')
-    if reused:
-        if not re.fullmatch('[1-9][0-9]*', reused):
-            raise ValueError('Native QA run ID must be numeric')
-        native = control.api(f'repos/{control.CANONICAL}/actions/runs/{reused}')
-        if (native.get('repository', {}).get('id') != REPOSITORY_ID
-                or native.get('path') != '.github/workflows/aerynos-qualify.yml'
-                or native.get('event') != 'workflow_dispatch' or native.get('head_branch') != 'main'
-                or native.get('status') != 'completed' or native.get('conclusion') != 'success'):
-            raise ValueError('Reused native QA must be a successful trusted canonical qualification run')
+    if os.environ.get('QUALIFIED_RUN_ID'):
+        raise ValueError('Cross-repository native QA reuse is unsupported; qualify in the current delivery run')
     tag = os.environ['CORE_TAG']
     release = control.api(f'repos/{control.CANONICAL}/releases/tags/{tag}')
     if (release.get('tag_name') != tag or release.get('draft') or not release.get('published_at')
@@ -265,7 +257,7 @@ def bind_qualified(directory):
                'linux_producer_run_id': provenance['producer_run_id'],
                'assembler_run_id': int(os.environ['CORE_RUN_ID']),
                'assembler_source_sha': os.environ['CORE_SOURCE_SHA'], 'version_tag_source_sha': tag_source,
-               'qualification_run_id': int(reused or os.environ.get('GITHUB_RUN_ID', '0'))}
+               'qualification_run_id': int(os.environ.get('GITHUB_RUN_ID', '0'))}
     path = directory / 'core-release.json'
     control.write(path, receipt)
     with (directory / 'SHA256SUMS.txt').open('a') as output:

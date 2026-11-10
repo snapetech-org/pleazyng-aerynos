@@ -185,20 +185,14 @@ class ReleaseDeliveryTests(unittest.TestCase):
             releases.mirror_main()
         write.assert_not_called()
 
-    def test_reuse_never_accepts_untrusted_or_incomplete_native_run(self):
+    def test_cross_repository_native_reuse_is_rejected_before_api_access(self):
         q = {'source_sha': 'a' * 40}
         env = {'SOURCE_SHA': 'a' * 40, 'QUALIFIED_RUN_ID': '42'}
-        with patch.dict(releases.os.environ, env), patch.object(control, 'validated', return_value=(q, {})):
-            for metadata in [
-                    {'repository': {'id': 99}},
-                    {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/aerynos-qualify.yml',
-                     'event': 'workflow_dispatch', 'head_branch': 'main', 'status': 'completed', 'conclusion': 'failure'},
-                    {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/other.yml',
-                     'event': 'workflow_dispatch', 'head_branch': 'main', 'status': 'completed', 'conclusion': 'success'},
-                    {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/aerynos-qualify.yml',
-                     'event': 'workflow_dispatch', 'head_branch': 'unreviewed-branch', 'status': 'completed', 'conclusion': 'success'}]:
-                with self.subTest(metadata=metadata), patch.object(control, 'api', return_value=metadata), self.assertRaises(ValueError):
-                    releases.bind_qualified(Path('unused'))
+        with patch.dict(releases.os.environ, env), patch.object(control, 'validated', return_value=(q, {})), \
+                patch.object(control, 'api') as api:
+            with self.assertRaisesRegex(ValueError, 'Cross-repository native QA reuse'):
+                releases.bind_qualified(Path('unused'))
+        api.assert_not_called()
 
     def test_binding_checks_published_bytes_version_and_original_producer(self):
         q = {'source_sha': 'a' * 40, 'version': '3.0.29+188', 'build': {

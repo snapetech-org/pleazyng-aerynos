@@ -2,10 +2,6 @@ name: Synchronize qualified aerynOS channel
 on:
   workflow_dispatch:
     inputs:
-      qualified_run_id:
-        description: Optional successful canonical native QA run for these exact published bytes
-        type: string
-        required: false
       retry_now:
         description: Retry a failed candidate immediately after fixing qualification tooling
         type: boolean
@@ -48,15 +44,49 @@ jobs:
         run: python3 scripts/releases.py reconcile
   build:
     needs: plan
-    if: needs.plan.outputs.build == 'true' && inputs.qualified_run_id == ''
+    if: needs.plan.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: read
       actions: read
       attestations: read
-    uses: snapetech-org/pleazyng/.github/workflows/aerynos-from-core.yml@6343663ca38e8760c60f0a94d1996e8cce52f59a
-    with:
-      source_sha: ${{ needs.plan.outputs.source_sha }}
-      producer_run_id: ${{ needs.plan.outputs.core_producer_run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: snapetech-org/pleazyng
+          ref: ${{ needs.plan.outputs.source_sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: snapetech-org/pleazyng
+          ref: main
+          path: tooling
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Verify and stage the published Linux archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_TAG: ${{ needs.plan.outputs.core_tag }}
+          SOURCE_SHA: ${{ needs.plan.outputs.source_sha }}
+          CORE_LINUX_SHA256: ${{ needs.plan.outputs.core_linux_sha256 }}
+          PRODUCER_RUN_ID: ${{ needs.plan.outputs.core_producer_run_id }}
+        run: |
+          python3 scripts/stage_release.py --source source --tooling tooling \
+            --tag "$CORE_TAG" --sha256 "$CORE_LINUX_SHA256" \
+            --source-sha "$SOURCE_SHA" --producer-run-id "$PRODUCER_RUN_ID" \
+            --output "$RUNNER_TEMP/candidate"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: aerynos-candidate-${{ needs.plan.outputs.source_sha }}
+          path: ${{ runner.temp }}/candidate/
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 0
   qualify:
     needs: [plan, build]
     if: needs.build.result == 'success'
@@ -70,7 +100,7 @@ jobs:
       producer_run_id: ""
   publish:
     needs: [plan, qualify]
-    if: ${{ always() && needs.plan.outputs.build == 'true' && (needs.qualify.result == 'success' || inputs.qualified_run_id != '') }}
+    if: ${{ always() && needs.plan.outputs.build == 'true' && needs.qualify.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -83,14 +113,13 @@ jobs:
         with:
           name: aerynos-qualified-${{ needs.plan.outputs.source_sha }}
           path: ${{ runner.temp }}/qualified
-          repository: ${{ inputs.qualified_run_id && 'snapetech-org/pleazyng' || github.repository }}
-          run-id: ${{ inputs.qualified_run_id || github.run_id }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
           github-token: ${{ github.token }}
       - name: Publish immutable assets and atomically promote feed
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ needs.plan.outputs.source_sha }}
-          QUALIFIED_RUN_ID: ${{ inputs.qualified_run_id }}
           CORE_TAG: ${{ needs.plan.outputs.core_tag }}
           CORE_RELEASE_ID: ${{ needs.plan.outputs.core_release_id }}
           CORE_RUN_ID: ${{ needs.plan.outputs.core_run_id }}

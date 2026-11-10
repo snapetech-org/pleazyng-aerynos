@@ -89,7 +89,10 @@ the five-minute schedule also catches pending deliveries. The delivery controlle
 checks published canonical releases every five minutes,
 subject to GitHub scheduling and runner availability. It processes releases from
 3.0.29 onward in version order. It verifies the attested release checksums and successful final core workflow,
-then verifies the published Linux archive and its original compiler attestation, then reuses the original core Linux artifact. It never recompiles
+then verifies the published Linux archive and its original compiler attestation,
+and stages those exact public bytes for native QA. Staging uses anonymous release
+downloads rather than a cross-repository Actions artifact token. Original Linux
+job, retained artifact identity and certificate source/run checks still apply. It never recompiles
 the application or starts an all-platform build.
 
 Every candidate must pass a fresh native aerynOS Boulder build, Moss install and
@@ -122,10 +125,9 @@ waive tag/source/run binding. No such exception is currently enabled here.
 Deployment status is recorded in [promotion-hold.json](sync-state/promotion-hold.json).
 While its hold is active, delivery does not stage or publish anything. The
 scheduled workflow must also be enabled explicitly; the controller never
-re-enables schedules itself. A successful canonical native QA preflight can be
-reused through the manual `qualified_run_id` input; its trusted workflow identity,
-completed checks, source, version and exact Linux bytes are checked again before
-publication. See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actions),
+re-enables schedules itself. Native qualification artifacts are produced and
+consumed within the same delivery run; manual cross-repository QA reuse is not
+supported. See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actions),
 [delivery status](sync-state/status.json), and
 [completed release receipts](sync-state/releases.json).
 
