@@ -20,8 +20,9 @@ upgrade an installed version. Each snapshot also supplies a versioned
 [last-good receipt](sync-state/last-good.json) records the current qualified
 source and feed URLs.
 
-Public feed fetch, checksum comparison, removal/reinstall and ordinary relaunch
-also pass in the guest; see [publication receipt](publication-receipt.json).
+The initial seed passed public feed fetch, checksum comparison, removal/reinstall
+and ordinary relaunch; see its [seed receipt](seed-publication-receipt.json).
+Current source and per-snapshot checks appear in the last-good receipt.
 
 ## Build the recipe
 

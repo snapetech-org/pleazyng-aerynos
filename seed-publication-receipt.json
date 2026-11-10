@@ -1,0 +1,27 @@
+{
+  "verified_at_utc": "2026-11-10T00:51:23.990440+00:00",
+  "published": true,
+  "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/snapshot-3.0.22-181-r1",
+  "release_tag": "snapshot-3.0.22-181-r1",
+  "feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index",
+  "public_feed_added_in_aerynos_guest": true,
+  "public_package_fetch": "pass; native Moss fetched without GitHub credentials",
+  "fetched_stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
+  "matches_natively_qualified_package": true,
+  "public_feed_remove_and_reinstall": "pass; installer reused native verified cache after independent public fetch",
+  "installed_version": "3.0.22-1",
+  "ordinary_app_relaunch_and_stored_connection": "pass; no QA renderer injection, three libraries load",
+  "github_asset_sha256_matches_local": true,
+  "assets": {
+    "aerynos-recipe.tar.gz": "sha256:110463259c46e44c742e2445805c3b6bc3bd318f428d10553738b1fe5eb93ed8",
+    "pleazyng-3.0.22-1-1-x86_64.stone": "sha256:25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
+    "pleazyng-linux-x64.tar.gz": "sha256:080839adeb75f2c6f03c35362ccb84f1de5bc2df67920e23438716714edfe87d",
+    "pleazyng-source-a13b139cd.tar.gz": "sha256:8bf42b7df6a7d89379900daed0cd5f6545b3ac378056dc9031e43bbea6417861",
+    "qualification.json": "sha256:79fdf2863f31738bd19a50230e4585ab1a1fc08cbd668fac88d17279993c04b5",
+    "SHA256SUMS.txt": "sha256:e5270230e9c9e4f2d647c927959d02452e995330c7ebd536bc6f3977d454d63b",
+    "stone.index": "sha256:048788bf618cb70b95e3dd53b63ac48edcb1cf6bea111a1d914c44e790fa9c95"
+  },
+  "core_release_rebuilt": false,
+  "official_distro_acceptance": false,
+  "artifact_attestation": false
+}
