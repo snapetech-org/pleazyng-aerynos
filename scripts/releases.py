@@ -131,6 +131,9 @@ def reconcile():
     release = choose([r for page in pages for r in page], receipts, attempts,
                      retry=os.environ.get('MANUAL_RETRY') == 'true')
     if release is None:
+        if choose([r for page in pages for r in page], receipts, attempts, retry=True):
+            emit({'build': False, 'reason': 'failure-backoff'})
+            return
         health = control.read('sync-state/release-health.json', {})
         last = dt.datetime.fromisoformat(health['observed_at']) if health.get('observed_at') else None
         if last is None or control.now() - last >= dt.timedelta(days=7):
