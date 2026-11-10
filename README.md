@@ -57,6 +57,19 @@ attestation and is not an all-platform core application release.
 The immutable v3.0.7 input failed visible-video QA and is not distributed here.
 See the [historical record](https://github.com/snapetech-org/pleazyng/blob/main/docs/maintainers/aerynos-qualification.md).
 
+## Known issues under investigation
+
+A new fresh-install test on aerynOS 2026.11 found that the Jellyfin password
+field can remain empty when typing with the default GTK input method. Ordinary
+Search typing works; launching the same package with the simple input method
+allowed fixture sign-in. That diagnostic override is not the shipping default
+or a qualification result. The cause is still under investigation.
+
+The earlier saved-connection relaunch and playback results remain historical
+evidence; they do not establish that fresh default-method sign-in passes.
+Automatic promotion is blocked until the ordinary fresh-login check passes.
+The existing pinned preview remains available for review.
+
 ## Source and licensing
 
 Pleazyng is GPL-3.0-only; see [LICENSE](LICENSE), the source archive attached to
