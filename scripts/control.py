@@ -79,6 +79,11 @@ def plan(sha, good, status, run_number, time, retry=False):
 
 def reconcile():
     refresh()
+    if read('sync-state/promotion-hold.json', {}).get('active'):
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write('build=false\nreason=owner-hold\n')
+        print('Owner hold: source scheduling and promotion remain disabled')
+        return
     run(['gh', 'workflow', 'enable', 'reconcile.yml', '-R', CHANNEL])
     latest = api(f'repos/{CANONICAL}/commits/main')['sha']
     sha = os.environ.get('REQUESTED_SOURCE_SHA') or latest
@@ -164,8 +169,10 @@ def promotion_allowed(candidate, good, main, ancestry, bootstrap=None):
 
 def publish(directory):
     directory = Path(directory).resolve()
-    q, assets = validated(directory)
     refresh()
+    if read('sync-state/promotion-hold.json', {}).get('active'):
+        raise RuntimeError('Owner hold: public promotion is disabled')
+    q, assets = validated(directory)
     good = read('sync-state/last-good.json', {})
     main = api(f'repos/{CANONICAL}/commits/main')['sha']
     if not promotion_allowed(q, good, main, is_ancestor, read('sync-state/bootstrap.json')):

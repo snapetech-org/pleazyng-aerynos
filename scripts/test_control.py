@@ -4,7 +4,30 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import control
+
+
+class OwnerHoldTests(unittest.TestCase):
+    def test_reconcile_does_not_reenable_or_dispatch_during_owner_hold(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'outputs'
+            with patch.dict(control.os.environ, {'GITHUB_OUTPUT': str(output)}), \
+                    patch.object(control, 'refresh'), patch.object(control, 'read', return_value={'active': True}), \
+                    patch.object(control, 'run') as run, patch.object(control, 'api') as api:
+                control.reconcile()
+            self.assertIn('build=false', output.read_text())
+            self.assertIn('reason=owner-hold', output.read_text())
+            run.assert_not_called()
+            api.assert_not_called()
+
+    def test_promotion_stops_before_asset_or_api_work_during_owner_hold(self):
+        with patch.object(control, 'refresh'), patch.object(control, 'read', return_value={'active': True}), \
+                patch.object(control, 'validated') as validated, patch.object(control, 'api') as api:
+            with self.assertRaisesRegex(RuntimeError, 'Owner hold'):
+                control.publish(Path('unconsumed-handoff'))
+            validated.assert_not_called()
+            api.assert_not_called()
 
 
 class PlanningTests(unittest.TestCase):
