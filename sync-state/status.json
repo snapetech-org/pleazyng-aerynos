@@ -1,10 +1,8 @@
 {
   "build": true,
-  "source_sha": "e2d60f54e7faae36458dd2460932b7ff44700934",
+  "source_sha": "2ef9f3101bc99354de93637f84bb5c698c3187fc",
   "release": 2,
-  "phase": "failed",
-  "observed_at": "2026-11-10T03:10:51.051425+00:00",
-  "run_url": "https://github.com/snapetech-org/pleazyng-aerynos/actions/runs/42746523450",
-  "failed_at": "2026-11-10T03:32:23.436229+00:00",
-  "retry_after": "2026-11-10T04:02:23.436238+00:00"
+  "phase": "building",
+  "observed_at": "2026-11-10T03:43:22.200123+00:00",
+  "run_url": "https://github.com/snapetech-org/pleazyng-aerynos/actions/runs/42750905403"
 }
