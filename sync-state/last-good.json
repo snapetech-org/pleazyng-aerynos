@@ -8,5 +8,6 @@
   "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index",
   "stone": "pleazyng-3.0.22-1-1-x86_64.stone",
   "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
-  "note": "Qualified seed predates canonical main source tracking; exact source archive is attached to the seed release."
+  "note": "Qualified seed predates canonical main source tracking; exact source archive is attached to the seed release.",
+  "required_candidate_gate_set": "native-lifecycle-v1"
 }

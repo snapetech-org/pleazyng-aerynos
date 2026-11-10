@@ -6,6 +6,10 @@ on:
         description: Optional full main ancestor SHA for bootstrap/recovery; empty selects current main
         type: string
         required: false
+      retry_now:
+        description: Retry a failed candidate immediately after fixing qualification tooling
+        type: boolean
+        default: false
       producer_run_id:
         description: Optional existing canonical candidate run for that exact source; empty builds automatically
         type: string
@@ -36,6 +40,7 @@ jobs:
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}
+          MANUAL_RETRY: ${{ inputs.retry_now && 'true' || 'false' }}
           REQUESTED_SOURCE_SHA: ${{ inputs.source_sha }}
         run: python3 scripts/control.py reconcile
   build:

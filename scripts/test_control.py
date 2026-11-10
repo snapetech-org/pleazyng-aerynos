@@ -27,6 +27,8 @@ class PlanningTests(unittest.TestCase):
         self.assertFalse(control.plan(self.sha, {}, status, 1, self.time)['build'])
         self.assertTrue(control.plan('c' * 40, {}, status, 2, self.time)['build'])
         self.assertTrue(control.plan(self.sha, {}, status, 3, self.time + dt.timedelta(minutes=30))['build'])
+        self.assertTrue(control.plan(self.sha, {}, status, 3, self.time, retry=True)['build'])
+        self.assertFalse(control.plan(self.sha, {'source_sha': self.sha}, status, 3, self.time, retry=True)['build'])
 
     def test_rejects_ambiguous_or_injected_source_names(self):
         for value in ('main', 'a' * 12, '../main', 'a' * 40 + '\n'):

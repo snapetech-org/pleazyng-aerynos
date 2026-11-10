@@ -15,6 +15,7 @@ import tarfile
 CANONICAL = 'snapetech-org/pleazyng'
 CHANNEL = 'snapetech-org/pleazyng-aerynos'
 REQUIRED = {'native_boulder_build', 'native_moss_install', 'native_moss_upgrade', 'installed_elf', 'bundled_im_cache', 'ordinary_release_launch',
+            'background_return_playing', 'background_return_paused', 'route_resume', 'bookmark_resume', 'audio_clock',
             'jellyfin_sign_in', 'dv_default_on', 'fallback_default_on', 'visible_h264', 'pause', 'seek', 'fullscreen'}
 
 
@@ -64,12 +65,12 @@ def is_ancestor(older, newer):
     return api(f'repos/{CANONICAL}/compare/{older}...{newer}')['status'] in ('ahead', 'identical')
 
 
-def plan(sha, good, status, run_number, time):
+def plan(sha, good, status, run_number, time, retry=False):
     if not re.fullmatch('[0-9a-f]{40}', sha):
         raise ValueError('Canonical source must resolve to a full SHA')
     if good.get('source_sha') == sha:
         return {'build': False, 'reason': 'current', 'source_sha': sha}
-    if status.get('source_sha') == sha and status.get('phase') == 'failed':
+    if not retry and status.get('source_sha') == sha and status.get('phase') == 'failed':
         retry = dt.datetime.fromisoformat(status['retry_after'])
         if time < retry:
             return {'build': False, 'reason': 'failure-backoff', 'source_sha': sha}
@@ -101,7 +102,7 @@ def reconcile():
         write('sync-state/reconciliation.json', {'canonical_main_sha': latest, 'published_source_sha': good.get('source_sha'),
                                                'observed_at': now().isoformat(), 'last_good_release_available': bool(good.get('tag'))})
         commit(['sync-state/reconciliation.json'], 'Record weekly canonical and last-good feed health')
-    result = plan(sha, good, status, int(os.environ['GITHUB_RUN_NUMBER']), now())
+    result = plan(sha, good, status, int(os.environ['GITHUB_RUN_NUMBER']), now(), retry=os.environ.get('MANUAL_RETRY') == 'true')
     if result['build']:
         write('sync-state/status.json', {**result, 'phase': 'building', 'observed_at': now().isoformat(),
                                        'run_url': os.environ['GITHUB_SERVER_URL'] + '/' + CHANNEL + '/actions/runs/' + os.environ['GITHUB_RUN_ID']})
