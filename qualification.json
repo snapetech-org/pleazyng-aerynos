@@ -1,0 +1,39 @@
+{
+  "application_version": "3.0.22+181",
+  "package_version": "3.0.22-1",
+  "channel_tag": "snapshot-3.0.22-181-r1",
+  "source_commit": "a13b139cd75b8521deedb8dc8ee00928754aac11",
+  "source_archive": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/pleazyng-source-a13b139cd.tar.gz",
+  "application_archive_sha256": "080839adeb75f2c6f03c35362ccb84f1de5bc2df67920e23438716714edfe87d",
+  "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
+  "os": "aerynOS 2026.11, kernel 7.2.14-71.stable",
+  "environment": "QEMU/KVM; 2 vCPU, 8 GiB, virtio, Mesa llvmpipe; UEFI/systemd-boot",
+  "checks": {
+    "boulder_build": "pass",
+    "moss_install_and_upgrade": "pass",
+    "installed_elf": {
+      "count": 402,
+      "missing": 0,
+      "errors": 0
+    },
+    "jellyfin_persisted_connection": "pass",
+    "h264_visible_video_audio_pause_seek_fullscreen": "pass",
+    "explicit_dv_off_preserved": "pass",
+    "absent_dv_preference_defaults_on": "pass",
+    "compatibility_fallback_defaults_on": "pass",
+    "profile7_bl_el_local_visible_pattern": "pass: opengl-next, splitter and el_pair active",
+    "renderer_startup_rejected": "pass: injected unsupported error, legacy opengl and visible pattern",
+    "coredumps": 0
+  },
+  "not_qualified": [
+    "Physical GPU decoding",
+    "Physical HDR/Dolby Vision output",
+    "FEL reference picture accuracy",
+    "Plex/Emby accounts",
+    "NPU inference",
+    "All-platform core release"
+  ],
+  "release_class": "Independent preview source snapshot; no GitHub artifact attestation; not immutable v3.0.7 or a complete core release",
+  "recipe_mirror_note": "Native build used identical application bytes via guest-only HTTP mirror. Published recipe substitutes this immutable public asset URL; no application bytes changed.",
+  "official_distro_acceptance": false
+}

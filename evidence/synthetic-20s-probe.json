@@ -1,0 +1,118 @@
+{
+    "streams": [
+        {
+            "index": 0,
+            "codec_name": "hevc",
+            "codec_long_name": "H.265 / HEVC (High Efficiency Video Coding)",
+            "profile": "Main 10",
+            "codec_type": "video",
+            "codec_tag_string": "hvc1",
+            "codec_tag": "0x31637668",
+            "width": 3840,
+            "height": 2160,
+            "coded_width": 3840,
+            "coded_height": 2160,
+            "has_b_frames": 0,
+            "pix_fmt": "yuv420p10le",
+            "level": 255,
+            "color_range": "tv",
+            "color_space": "bt2020nc",
+            "color_transfer": "smpte2084",
+            "color_primaries": "bt2020",
+            "chroma_location": "left",
+            "view_ids_available": "",
+            "view_pos_available": "",
+            "id": "0x1",
+            "r_frame_rate": "24000/1001",
+            "avg_frame_rate": "24000/1001",
+            "time_base": "1/24000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 480480,
+            "duration": "20.020000",
+            "bit_rate": "1915236",
+            "nb_frames": "480",
+            "extradata_size": 111,
+            "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+            },
+            "tags": {
+                "creation_time": "2026-11-10T00:14:47.000000Z",
+                "language": "und",
+                "handler_name": "?@GPAC2.2.1-rev2.2.1+dfsg1-3.1build2"
+            },
+            "side_data_list": [
+                {
+                    "side_data_type": "DOVI configuration record",
+                    "dv_version_major": 1,
+                    "dv_version_minor": 0,
+                    "dv_profile": 7,
+                    "dv_level": 6,
+                    "rpu_present_flag": 1,
+                    "el_present_flag": 1,
+                    "bl_present_flag": 1,
+                    "dv_bl_signal_compatibility_id": 0,
+                    "dv_md_compression": "none"
+                },
+                {
+                    "side_data_type": "HEVC enhancement-layer decoder configuration"
+                },
+                {
+                    "side_data_type": "Mastering display metadata",
+                    "red_x": "35400/50000",
+                    "red_y": "14600/50000",
+                    "green_x": "8500/50000",
+                    "green_y": "39850/50000",
+                    "blue_x": "6550/50000",
+                    "blue_y": "2300/50000",
+                    "white_point_x": "15635/50000",
+                    "white_point_y": "16450/50000",
+                    "min_luminance": "50/10000",
+                    "max_luminance": "100000000/10000"
+                },
+                {
+                    "side_data_type": "Content light level metadata",
+                    "max_content": 10000,
+                    "max_average": 400
+                }
+            ]
+        }
+    ],
+    "format": {
+        "filename": "/home/keith/Documents/code/.scratch/pleazyng-dv-auto-20261109/synthetic-p7/synthetic-p7-fel-20s.mp4",
+        "nb_streams": 1,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "20.020000",
+        "size": "4796149",
+        "bit_rate": "1916543",
+        "probe_score": 100,
+        "tags": {
+            "major_brand": "isom",
+            "minor_version": "1",
+            "compatible_brands": "isomiso4",
+            "creation_time": "2026-11-10T00:28:06.000000Z"
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "status": "source-only-unqualified",
+  "projectm": {
+    "repository": "https://github.com/projectM-visualizer/projectm.git",
+    "version": "4.1.8",
+    "commit": "4967dc003e5206d7df3ff447287f7609c47d2343",
+    "submodules": {
+      "vendor/projectm-eval": "e8c311e86f4d8c082e96e02b6a33525034eee6d4"
+    },
+    "patch": "patches/projectm-4.1.8-output-fbo.patch",
+    "patchSha256": "a1da62083afdc9676878dab6bfad3e1f09055632459fd6ea6544124797f3ee8d"
+  },
+  "mpv": {
+    "repository": "https://github.com/mpv-player/mpv.git",
+    "version": "0.41.0",
+    "commit": "41f6a645068483470267271e1d09966ca3b9f413",
+    "patch": "patches/mpv-0.41.0-pcm-tap.patch",
+    "patchSha256": "f896f1ecd7c4c539ed464dfc4bb7ded65fd5919b63dcc20c4bf66ce55fe40105"
+  },
+  "appMpvBuild": {
+    "repository": "https://github.com/snapetech-org/mpv-build",
+    "commit": "39626d5c455b2f1e7441d7b5c3d8a6cef8111b45",
+    "integrationStatus": "source-integrated-and-export-gated; binary-artifact-production-and-promotion-pending",
+    "orderedPcmPatch": "patches/mpv/pool/0210-plezy-ordered-audio-tap.patch",
+    "androidBridgePatch": "patches/mpv-build-android-visualizer-bridge.patch",
+    "androidBridgePatchSha256": "4c60f9b9ef0017bc2a89ef023932433f75c99d6604ebe99817ba8d36ea2bc28d"
+  },
+  "milkrust": {
+    "repository": "https://github.com/snapetech-org/MilkRust.git",
+    "ref": "refs/pull/20/head",
+    "commit": "16490403726ba0240249b41903855583f4f9292d",
+    "abi": 2,
+    "crate": "milkrust-native",
+    "license": "AGPL-3.0-only",
+    "qualification": "source-only-unqualified",
+    "webosTarget": "armv7-unknown-linux-gnueabi",
+    "webosFloatAbi": "base-aapcs-softfp-compatible",
+    "hlslCompiler": {
+      "repository": "https://github.com/Thekla/hlslparser",
+      "revision": "4f4aefdc52ec49910a7542da4e772b9a0c246d7b",
+      "license": "MIT",
+      "integration": "vendored-by-milkrust",
+      "profile": "milkrust-hlslparser-es300-v1"
+    }
+  }
+}
