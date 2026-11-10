@@ -117,15 +117,23 @@ undelivered releases are recorded as superseded; they cannot roll the feed back.
 receipts prevent duplicate publication; older or divergent sources cannot replace
 newer qualified packages.
 
-The remote version tag must resolve to the exact attested compiler and final
-assembler commit. Both lightweight and annotated tags are supported. The frozen
-commit may be an ancestor of current `main`; later development does not change
-the release identity. Original compiler and assembler run IDs remain separate
-in `core-release.json` even when their source is identical.
+The remote version tag must resolve to the exact attested Linux compiler commit.
+Both lightweight and annotated tags are supported. For ordinary releases, the
+assembler uses that same commit. The frozen source may be an ancestor of current
+`main`; later development does not change the release identity.
 
-A recovery using a different source fails closed. It requires an independently
-verified unchanged-product recovery rule; self-asserted receipt fields do not
-waive tag/source/run binding. No such exception is currently enabled here.
+A failed Apple build can use the closed `frozen-apple-packaging-v1` recovery
+contract. An approval committed in the actual workflow revision pins the exact
+repair commit and every changed packaging file's Git blob. Independent commit,
+complete tree and diff checks require that repair to have the frozen source as
+its sole parent; application, version and native dependency inputs cannot change.
+The public recovery receipt must be bound by the assembler's attested checksums,
+match the actual approved checkout, and retain the original Linux certificate,
+digest and artifact identity. Original embedded CI/freeze, reused platform jobs
+and actual signed Apple archive steps are checked against GitHub's public APIs.
+These checks run again before promotion. A receipt claiming equivalence alone
+is rejected. `core-release.json` records the separate product, packaging and
+workflow sources, compiler/assembler run IDs and recovery proof digest.
 
 Deployment status is recorded in [promotion-hold.json](sync-state/promotion-hold.json).
 While its hold is active, delivery does not stage or publish anything. The

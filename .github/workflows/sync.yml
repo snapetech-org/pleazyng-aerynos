@@ -29,6 +29,8 @@ jobs:
       core_run_id: ${{ steps.plan.outputs.core_run_id }}
       core_source_sha: ${{ steps.plan.outputs.core_source_sha }}
       core_linux_sha256: ${{ steps.plan.outputs.core_linux_sha256 }}
+      core_packaging_source_sha: ${{ steps.plan.outputs.core_packaging_source_sha }}
+      core_recovery_sha256: ${{ steps.plan.outputs.core_recovery_sha256 }}
       release: ${{ steps.plan.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -126,6 +128,8 @@ jobs:
           CORE_SOURCE_SHA: ${{ needs.plan.outputs.core_source_sha }}
           CORE_LINUX_SHA256: ${{ needs.plan.outputs.core_linux_sha256 }}
           CORE_PRODUCER_RUN_ID: ${{ needs.plan.outputs.core_producer_run_id }}
+          CORE_PACKAGING_SOURCE_SHA: ${{ needs.plan.outputs.core_packaging_source_sha }}
+          CORE_RECOVERY_SHA256: ${{ needs.plan.outputs.core_recovery_sha256 }}
         run: |
           python3 scripts/releases.py bind "$RUNNER_TEMP/qualified"
           python3 scripts/control.py publish "$RUNNER_TEMP/qualified"

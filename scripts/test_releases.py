@@ -96,6 +96,36 @@ class ReleaseDeliveryTests(unittest.TestCase):
         attempts['v3.0.29']['phase'] = 'superseded'
         self.assertIsNone(releases.choose([self.release()], {}, attempts, retry=True))
 
+    def test_repaired_assembler_keeps_original_linux_certificate_identity(self):
+        payload = b'original frozen Linux bytes'
+        checksum = hashlib.sha256(payload).hexdigest()
+        release = self.release()
+        release['assets'][0]['digest'] = 'sha256:' + checksum
+
+        def download(arguments):
+            name = arguments[arguments.index('--pattern') + 1]
+            target = Path(arguments[arguments.index('--dir') + 1]) / name
+            target.write_bytes((checksum + '  pleazyng-linux-x64.tar.gz\n').encode()
+                               if name == 'SHA256SUMS.txt' else payload)
+
+        recovery = {'packaging_source_sha': 'd' * 40, 'receipt_sha256': 'e' * 64, 'approval': {}}
+        with patch.object(control, 'run', side_effect=download), \
+                patch.object(releases, 'verify_file', side_effect=[('b' * 40, 99), ('a' * 40, 42)]), \
+                patch.object(releases, 'completed_core'), patch.object(releases, 'release_tag_commit', return_value='a' * 40), \
+                patch.object(releases.packaging_recovery, 'verify', return_value=recovery) as verify:
+            result = releases.resolve(release)
+        self.assertEqual(result['source_sha'], 'a' * 40)
+        self.assertEqual(result['core_source_sha'], 'b' * 40)
+        self.assertEqual(result['core_packaging_source_sha'], 'd' * 40)
+        self.assertEqual(result['core_recovery_sha256'], 'e' * 64)
+        self.assertEqual(verify.call_args.kwargs['producer_run'], 42)
+        self.assertEqual(verify.call_args.kwargs['assembly_run'], 99)
+        self.assertEqual(verify.call_args.kwargs['linux_sha256'], checksum)
+        with patch.object(control, 'run', side_effect=download), \
+                patch.object(releases, 'verify_file', side_effect=[('b' * 40, 99), ('a' * 40, 42)]), \
+                patch.object(releases, 'completed_core'), patch.object(releases, 'release_tag_commit', return_value='a' * 40):
+            with self.assertRaisesRegex(ValueError, 'public attested receipt'):
+                releases.resolve({**release, 'self_asserted_unchanged_product': True})
     def test_resolution_failure_is_recorded_before_source_outputs_exist(self):
         reads = {'sync-state/promotion-hold.json': {}, 'sync-state/releases.json': {},
                  'sync-state/release-attempts.json': {}, 'sync-state/last-good.json': {}}
@@ -216,6 +246,39 @@ class ReleaseDeliveryTests(unittest.TestCase):
                         releases.bind_qualified(root)
                 with patch.object(control, 'api', return_value={**self.release(), 'draft': True}), self.assertRaises(ValueError):
                     releases.bind_qualified(root)
+
+    def test_native_binding_repeats_repair_proof_and_rejects_changed_identity(self):
+        q = {'source_sha': 'a' * 40, 'version': '3.0.29+188', 'build': {
+            'assets': {'pleazyng-linux-x64.tar.gz': 'c' * 64},
+            'provenance': {'kind': 'attested-core-linux-artifact', 'verified_source_sha': 'a' * 40,
+                           'producer_run_id': 42}}}
+        env = {'SOURCE_SHA': 'a' * 40, 'CORE_TAG': 'v3.0.29', 'CORE_RELEASE_ID': '11',
+               'CORE_LINUX_SHA256': 'c' * 64, 'CORE_PRODUCER_RUN_ID': '42', 'CORE_RUN_ID': '99',
+               'CORE_SOURCE_SHA': 'b' * 40, 'CORE_PACKAGING_SOURCE_SHA': 'd' * 40, 'CORE_RECOVERY_SHA256': 'e' * 64}
+        recovery = {'packaging_source_sha': 'd' * 40, 'receipt_sha256': 'e' * 64, 'approval': {'verified': True}}
+
+        def download(arguments):
+            (Path(arguments[arguments.index('--dir') + 1]) / 'SHA256SUMS.txt').write_text(
+                'c' * 64 + '  pleazyng-linux-x64.tar.gz\n')
+
+        def certificate(path):
+            return ('b' * 40, 99) if path.name == 'SHA256SUMS.txt' else ('a' * 40, 42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'SHA256SUMS.txt').write_text('')
+            (root / 'pleazyng-linux-x64.tar.gz').write_bytes(b'qualified input')
+            with patch.dict(releases.os.environ, env), patch.object(releases, 'release_tag_commit', return_value='a' * 40), \
+                    patch.object(releases, 'completed_core'), patch.object(releases, 'verify_file', side_effect=certificate), \
+                    patch.object(control, 'api', return_value=self.release()), patch.object(control, 'run', side_effect=download), \
+                    patch.object(control, 'validated', return_value=(q, {'pleazyng-linux-x64.tar.gz': 'c' * 64})), \
+                    patch.object(releases.packaging_recovery, 'verify', return_value=recovery) as verify:
+                result = releases.bind_qualified(root)
+                self.assertEqual(result['packaging_recovery'], recovery)
+                with patch.dict(releases.os.environ, {'CORE_RECOVERY_SHA256': 'f' * 64}):
+                    with self.assertRaisesRegex(ValueError, 'changed after native qualification'):
+                        releases.bind_qualified(root)
+                self.assertEqual(verify.call_count, 2)
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ import re
 import tempfile
 import urllib.parse
 import control
+import packaging_recovery
 
 REPOSITORY_ID = 1433487464
 SIGNER = control.CANONICAL + '/.github/workflows/build.yml'
@@ -92,8 +93,8 @@ def release_tag_commit(tag):
 
 def require_frozen_source(tag_source, compiler_source, assembler_source):
     if compiler_source != tag_source or assembler_source != tag_source:
-        # No independently validated recovery-receipt contract is supplied to
-        # this consumer. A self-asserted receipt must not bypass exact binding.
+        # Ordinary releases use exact equality. Packaging recovery goes through
+        # its independent verifier; a receipt flag never waives this guard.
         raise ValueError('Version tag differs from compiler/assembler source; verified unchanged-product recovery proof is required')
 
 
@@ -106,7 +107,6 @@ def resolve(release):
         core_source, core_run = verify_file(checksums)
         completed_core(core_source, core_run)
         tag_source = release_tag_commit(release['tag_name'])
-        require_frozen_source(tag_source, tag_source, core_source)
         expected = [line.split()[0] for line in checksums.read_text().splitlines()
                     if len(line.split()) == 2 and line.split()[1].lstrip('*') == asset['name']]
         if expected != [asset['digest'].removeprefix('sha256:')]:
@@ -119,12 +119,20 @@ def resolve(release):
         if asset['digest'] != 'sha256:' + checksum:
             raise ValueError('Published Linux bytes differ from the GitHub release digest')
         source, producer = verify_file(bundle)
-        require_frozen_source(tag_source, source, core_source)
+        # A packaging repair never changes the original Linux compiler source.
+        require_frozen_source(tag_source, source, tag_source)
+        recovery = None
+        if core_source != tag_source:
+            recovery = packaging_recovery.verify(release, temporary, checksums.read_text(),
+                product_source=tag_source, compiler_source=source, workflow_source=core_source,
+                producer_run=producer, assembly_run=core_run, linux_sha256=checksum)
     # Keep original Linux compilation and successful final assembly separate.
     return {'source_sha': source, 'core_producer_run_id': producer, 'core_tag': release['tag_name'],
             'core_release_id': release['id'], 'core_linux_sha256': checksum,
             'core_release_url': release['html_url'], 'core_run_id': core_run,
-            'core_source_sha': core_source, 'version_tag_source_sha': tag_source}
+            'core_source_sha': core_source, 'version_tag_source_sha': tag_source,
+            'core_packaging_source_sha': recovery['packaging_source_sha'] if recovery else '',
+            'core_recovery_sha256': recovery['receipt_sha256'] if recovery else ''}
 
 
 def emit(result):
@@ -241,7 +249,7 @@ def bind_qualified(directory):
         raise ValueError('Core release is not the approved published release')
     completed_core(os.environ['CORE_SOURCE_SHA'], os.environ['CORE_RUN_ID'])
     tag_source = release_tag_commit(tag)
-    require_frozen_source(tag_source, q['source_sha'], os.environ['CORE_SOURCE_SHA'])
+    require_frozen_source(tag_source, q['source_sha'], tag_source)
     asset = linux_asset(release)
     checksum = q['build']['assets']['pleazyng-linux-x64.tar.gz']
     provenance = q['build'].get('provenance', {})
@@ -252,12 +260,38 @@ def bind_qualified(directory):
             or str(provenance.get('producer_run_id')) != os.environ['CORE_PRODUCER_RUN_ID']
             or q['version'].split('+')[0] != tag.removeprefix('v')):
         raise ValueError('Native qualification does not match the published core Linux producer and bytes')
+    recovery = None
+    if os.environ['CORE_SOURCE_SHA'] != tag_source:
+        if (not re.fullmatch('[0-9a-f]{40}', os.environ.get('CORE_PACKAGING_SOURCE_SHA', ''))
+                or not re.fullmatch('[0-9a-f]{64}', os.environ.get('CORE_RECOVERY_SHA256', ''))):
+            raise ValueError('Native delivery has no independently resolved packaging recovery identity')
+        with tempfile.TemporaryDirectory(prefix='aerynos-recovery-bind-') as temporary:
+            control.run(['gh', 'release', 'download', tag, '--repo', control.CANONICAL,
+                         '--pattern', 'SHA256SUMS.txt', '--dir', temporary])
+            checksums = Path(temporary) / 'SHA256SUMS.txt'
+            if verify_file(checksums) != (os.environ['CORE_SOURCE_SHA'], int(os.environ['CORE_RUN_ID'])):
+                raise ValueError('Recovery assembly identity changed after native qualification')
+            if (packaging_recovery.checksum_for(checksums.read_text(), 'pleazyng-linux-x64.tar.gz') != checksum
+                    or verify_file(directory / 'pleazyng-linux-x64.tar.gz') !=
+                    (tag_source, int(os.environ['CORE_PRODUCER_RUN_ID']))):
+                raise ValueError('Qualified Linux bytes are not the original frozen compiler artifact')
+            recovery = packaging_recovery.verify(release, temporary, checksums.read_text(),
+                product_source=tag_source, compiler_source=q['source_sha'], workflow_source=os.environ['CORE_SOURCE_SHA'],
+                producer_run=int(os.environ['CORE_PRODUCER_RUN_ID']), assembly_run=int(os.environ['CORE_RUN_ID']),
+                linux_sha256=checksum)
+        if (recovery['packaging_source_sha'] != os.environ.get('CORE_PACKAGING_SOURCE_SHA')
+                or recovery['receipt_sha256'] != os.environ.get('CORE_RECOVERY_SHA256')):
+            raise ValueError('Approved packaging recovery changed after native qualification')
+    elif os.environ.get('CORE_PACKAGING_SOURCE_SHA') or os.environ.get('CORE_RECOVERY_SHA256'):
+        raise ValueError('Unexpected packaging recovery identity for an ordinary frozen release')
     receipt = {'tag': tag, 'release_id': release['id'], 'url': release['html_url'],
                'linux_sha256': checksum, 'source_sha': q['source_sha'],
                'linux_producer_run_id': provenance['producer_run_id'],
                'assembler_run_id': int(os.environ['CORE_RUN_ID']),
                'assembler_source_sha': os.environ['CORE_SOURCE_SHA'], 'version_tag_source_sha': tag_source,
                'qualification_run_id': int(os.environ.get('GITHUB_RUN_ID', '0'))}
+    if recovery:
+        receipt['packaging_recovery'] = recovery
     path = directory / 'core-release.json'
     control.write(path, receipt)
     with (directory / 'SHA256SUMS.txt').open('a') as output:
