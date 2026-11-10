@@ -18,6 +18,18 @@ If Pleazyng is already installed, inspect `sudo moss sync --dry-run`, then use
 upgrade an installed version. This versioned feed stays pinned until you choose
 another channel release.
 
+## Build the recipe
+
+On a configured aerynOS Boulder host:
+
+```sh
+git clone https://github.com/snapetech-org/pleazyng-aerynos.git
+cd pleazyng-aerynos/recipe
+boulder build stone.yaml
+```
+
+The `pkg/` directory is required; keep it beside `stone.yaml`.
+
 ## Build and evidence
 
 The first package is **3.0.22+181**, package release **1**, built from source
