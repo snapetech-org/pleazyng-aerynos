@@ -62,9 +62,11 @@ See the [historical record](https://github.com/snapetech-org/pleazyng/blob/main/
 ## Fresh sign-in and input methods
 
 A fresh-install test of the seed package found empty password input with the
-default GTK input method. The bundle lacked its input-method module cache.
-Generating the cache against the shipped GTK modules allowed default-method
-sign-in; forcing a simple input method was a diagnostic only.
+default GTK input method. The bundle also lacked its input-method module cache.
+Generating that cache allowed one diagnostic relaunch to sign in, but a fully
+fresh packaged-cache test still failed. Native pointer/keyboard focus is under
+investigation; the cache defect is not established as the sole cause. Forcing
+a simple input method was a diagnostic only.
 
 New snapshots must build and relocate that cache and pass fresh keyboard-driven
 sign-in in the ordinary installed app. The seed's earlier saved-connection
