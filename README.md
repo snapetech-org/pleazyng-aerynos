@@ -18,6 +18,9 @@ If Pleazyng is already installed, inspect `sudo moss sync --dry-run`, then use
 upgrade an installed version. This versioned feed stays pinned until you choose
 another channel release.
 
+Public feed fetch, checksum comparison, removal/reinstall and ordinary relaunch
+also pass in the guest; see [publication receipt](publication-receipt.json).
+
 ## Build the recipe
 
 On a configured aerynOS Boulder host:
