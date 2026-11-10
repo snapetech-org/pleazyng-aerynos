@@ -120,6 +120,34 @@ The current install command remains pinned to the tested seed until the first
 new qualified package promotes the live feed. No official aerynOS repository
 submission is part of this independent distribution channel.
 
+## Hold and resume delivery
+
+Use the serialized hold workflow for planned maintenance. First disable the
+scheduled reconciler so another poll cannot replace a pending hold request:
+
+```sh
+gh workflow disable reconcile.yml --repo snapetech-org/pleazyng-aerynos
+gh workflow run hold.yml --repo snapetech-org/pleazyng-aerynos \
+  -f active=true -f reason='Package channel maintenance'
+```
+
+Wait for that hold run to succeed and confirm `promotion-hold.json` is active.
+The hold workflow shares the publisher's concurrency group and preserves active
+work. An already active publication may finish before the queued hold takes
+effect. For immediate intervention, cancel the active channel run first.
+
+The publisher fetches the latest hold and feed state again after private draft
+uploads, immediately before making the release public. A hold committed during
+uploads leaves the assets in a draft and prevents feed promotion. Direct file
+edits outside the serialized workflow can still race the final GitHub API call;
+GitHub does not provide a transaction spanning a Git commit and release
+visibility. The ordinary fast-forward feed push rejects an intervening commit.
+Do not delete or overwrite published assets to simulate rollback.
+
+To resume, dispatch `hold.yml` with `active=false` and a reason. After it succeeds,
+explicitly enable `reconcile.yml` and dispatch it once. The complete core and
+native qualification gates remain in force while the configuration hold is off.
+
 ## Source and licensing
 
 Pleazyng is GPL-3.0-only; see [LICENSE](LICENSE), the source archive attached to

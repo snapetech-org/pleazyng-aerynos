@@ -1,0 +1,34 @@
+name: Control aerynOS publication hold
+on:
+  workflow_dispatch:
+    inputs:
+      active:
+        description: Hold publication (disable scheduled delivery before requesting a hold)
+        type: boolean
+        default: true
+      reason:
+        description: Reason for the hold or guarded resumption
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: aerynos-qualified-feed
+  cancel-in-progress: false
+jobs:
+  hold:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Validate controller
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Set the serialized publication hold
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HOLD_ACTIVE: ${{ inputs.active && 'true' || 'false' }}
+          HOLD_REASON: ${{ inputs.reason }}
+        run: python3 scripts/control.py hold --active "$HOLD_ACTIVE" --reason "$HOLD_REASON"

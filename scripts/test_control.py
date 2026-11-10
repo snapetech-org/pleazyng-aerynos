@@ -2,6 +2,7 @@ import datetime as dt
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -16,6 +17,46 @@ class OwnerHoldTests(unittest.TestCase):
                 control.publish(Path('unconsumed-handoff'))
             validated.assert_not_called()
             api.assert_not_called()
+
+    def test_hold_raised_during_upload_prevents_release_visibility_and_feed_commit(self):
+        state = {'held': False, 'uploaded': []}
+        q = {'source_sha': 'a' * 40, 'tag': 'main-aaaaaaaaaaaa-r2', 'version': '3.0.29+188', 'release': 2}
+        assets = {'core-release.json': 'b' * 64, 'package.stone': 'c' * 64}
+        def read(path, default=None):
+            if str(path) == 'sync-state/promotion-hold.json':
+                return {'active': state['held']}
+            if Path(path).name == 'core-release.json':
+                return {'source_sha': q['source_sha']}
+            return {}
+        def api(path):
+            if path.endswith('/commits/main'):
+                return {'sha': q['source_sha']}
+            return {'draft': True, 'assets': [{'name': name, 'digest': 'sha256:' + assets[name]}
+                                             for name in state['uploaded']]}
+        def upload(arguments):
+            if arguments[:3] == ['gh', 'release', 'upload']:
+                state['uploaded'].append(Path(arguments[4]).name)
+                state['held'] = True
+        with tempfile.TemporaryDirectory() as directory, patch.object(control, 'refresh') as refresh, \
+                patch.object(control, 'validated', return_value=(q, assets)), patch.object(control, 'read', side_effect=read), \
+                patch.object(control, 'api', side_effect=api), patch.object(control, 'promotion_allowed', return_value=True), \
+                patch.object(control.subprocess, 'run', return_value=SimpleNamespace(returncode=0)), \
+                patch.object(control, 'run', side_effect=upload) as run, patch.object(control, 'commit') as commit:
+            with self.assertRaisesRegex(RuntimeError, 'hold raised during upload'):
+                control.publish(directory)
+        self.assertEqual(refresh.call_count, 2)
+        self.assertEqual(len(state['uploaded']), 2)
+        self.assertFalse(any(call.args[0][:3] == ['gh', 'release', 'edit'] for call in run.call_args_list))
+        commit.assert_not_called()
+
+    def test_supported_hold_preserves_gate_configuration(self):
+        with patch.object(control, 'refresh'), patch.object(control, 'read', return_value={'native_qa': 'required'}), \
+                patch.object(control, 'write') as write, patch.object(control, 'commit'):
+            control.set_hold(True, 'maintainer maintenance')
+        value = write.call_args.args[1]
+        self.assertTrue(value['active'])
+        self.assertEqual(value['native_qa'], 'required')
+
 
 
 class PromotionTests(unittest.TestCase):

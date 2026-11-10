@@ -114,6 +114,16 @@ def promotion_allowed(candidate, good, main, ancestry, bootstrap=None):
     return True
 
 
+def set_hold(active, reason):
+    # The supported hold workflow shares the publisher's concurrency group.
+    refresh()
+    previous = read('sync-state/promotion-hold.json', {})
+    write('sync-state/promotion-hold.json', {**previous, 'active': active,
+                                           'reason': reason, 'updated_at': now().isoformat(),
+                                           'public_promotion': 'held' if active else 'requires complete published core and exact-byte native QA'})
+    commit(['sync-state/promotion-hold.json'], 'Hold aerynOS publication' if active else 'Resume guarded aerynOS delivery')
+
+
 def publish(directory):
     directory = Path(directory).resolve()
     refresh()
@@ -151,6 +161,15 @@ def publish(directory):
     remote = {a['name']: a.get('digest') for a in release['assets']}
     if any(remote.get(name) != 'sha256:' + digest for name, digest in assets.items()):
         raise RuntimeError('GitHub asset digest verification failed')
+    # Uploads can take minutes. Fetch the current hold and feed checkpoint
+    # immediately before the public transition, not merely before uploads.
+    refresh()
+    if read('sync-state/promotion-hold.json', {}).get('active'):
+        raise RuntimeError('Owner hold raised during upload: public promotion is disabled')
+    good = read('sync-state/last-good.json', {})
+    main = api(f'repos/{CANONICAL}/commits/main')['sha']
+    if not promotion_allowed(q, good, main, is_ancestor, read('sync-state/bootstrap.json')):
+        return
     if release['draft']:
         run(['gh', 'release', 'edit', tag, '-R', CHANNEL, '--draft=false'])
     # Only now touch the live pointer. No release asset is deleted or replaced.
@@ -205,8 +224,13 @@ if __name__ == '__main__':
     commands = parser.add_subparsers(dest='command', required=True)
     p = commands.add_parser('publish'); p.add_argument('directory', type=Path)
     p = commands.add_parser('fail'); p.add_argument('sha')
+    p = commands.add_parser('hold')
+    p.add_argument('--active', choices=['true', 'false'], required=True)
+    p.add_argument('--reason', required=True)
     args = parser.parse_args()
     if args.command == 'publish':
         publish(args.directory)
+    elif args.command == 'hold':
+        set_hold(args.active == 'true', args.reason)
     else:
         fail(args.sha)
