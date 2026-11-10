@@ -95,7 +95,9 @@ upgrade, dependency checks, sign-in, visible playback and audio, pause, seek,
 fullscreen, background return, saved-position resume and bookmark resume.
 Only then are immutable package assets published and the feed advanced.
 A failed candidate leaves the previous feed available and retries after thirty
-minutes. Manual delivery can retry immediately after a repair. Completed release
+minutes. Resolution failures are recorded too, and a new release remains eligible
+while an older delivery backs off. Once a newer release is qualified, older
+undelivered releases are recorded as superseded; they cannot roll the feed back. Manual delivery can retry immediately after a repair. Completed release
 receipts prevent duplicate publication; older or divergent sources cannot replace
 newer qualified packages.
 

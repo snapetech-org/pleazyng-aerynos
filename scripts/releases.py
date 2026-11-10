@@ -21,10 +21,15 @@ def version(tag):
     return tuple(map(int, match.groups())) if match else None
 
 
-def choose(releases, receipts):
+def choose(releases, receipts, attempts=None, time=None, retry=False):
+    attempts = attempts or {}
+    time = time or control.now()
     eligible = [r for r in releases if not r.get('draft') and r.get('published_at')
                 and version(r.get('tag_name', '')) is not None
-                and version(r['tag_name']) >= MINIMUM and r['tag_name'] not in receipts]
+                and version(r['tag_name']) >= MINIMUM and r['tag_name'] not in receipts
+                and attempts.get(r['tag_name'], {}).get('phase') != 'superseded'
+                and (retry or not attempts.get(r['tag_name'], {}).get('retry_after')
+                     or time >= dt.datetime.fromisoformat(attempts[r['tag_name']]['retry_after']))]
     return min(eligible, key=lambda r: version(r['tag_name'])) if eligible else None
 
 
@@ -122,7 +127,9 @@ def reconcile():
     receipts = control.read('sync-state/releases.json', {})
     pages = json.loads(control.run(['gh', 'api', '--paginate', '--slurp',
                                     f'repos/{control.CANONICAL}/releases?per_page=100']).stdout)
-    release = choose([r for page in pages for r in page], receipts)
+    attempts = control.read('sync-state/release-attempts.json', {})
+    release = choose([r for page in pages for r in page], receipts, attempts,
+                     retry=os.environ.get('MANUAL_RETRY') == 'true')
     if release is None:
         health = control.read('sync-state/release-health.json', {})
         last = dt.datetime.fromisoformat(health['observed_at']) if health.get('observed_at') else None
@@ -132,21 +139,30 @@ def reconcile():
             control.commit(['sync-state/release-health.json'], 'Record release delivery availability')
         emit({'build': False, 'reason': 'no-pending-release'})
         return
-    status = control.read('sync-state/status.json', {})
-    if (status.get('core_tag') == release['tag_name'] and status.get('phase') == 'failed'
-            and control.now() < dt.datetime.fromisoformat(status['retry_after'])
-            and os.environ.get('MANUAL_RETRY') != 'true'):
-        emit({'build': False, 'reason': 'failure-backoff'})
-        return
-    candidate = resolve(release)
-    sha = candidate['source_sha']
-    main = latest
     good = control.read('sync-state/last-good.json', {})
-    floor = good.get('source_sha') or control.read('sync-state/bootstrap.json')['canonical_floor_sha']
-    if (not control.is_ancestor(sha, candidate['core_source_sha'])
-            or not control.is_ancestor(candidate['core_source_sha'], main)
-            or not control.is_ancestor(floor, sha)):
-        raise RuntimeError('Published release source is outside the reviewed canonical lineage')
+    if version('v' + good.get('version', '0.0.0').split('+')[0]) > version(release['tag_name']):
+        attempts[release['tag_name']] = {'phase': 'superseded', 'release_id': release['id'],
+                                        'reason': 'A newer qualified release is already on the live feed',
+                                        'observed_at': control.now().isoformat()}
+        control.write('sync-state/release-attempts.json', attempts)
+        control.commit(['sync-state/release-attempts.json'], 'Retain disposition for older core release ' + release['tag_name'])
+        emit({'build': False, 'reason': 'newer-release-published'})
+        return
+    try:
+        candidate = resolve(release)
+        sha = candidate['source_sha']
+        floor = good.get('source_sha') or control.read('sync-state/bootstrap.json')['canonical_floor_sha']
+        if (not control.is_ancestor(sha, candidate['core_source_sha'])
+                or not control.is_ancestor(candidate['core_source_sha'], latest)
+                or not control.is_ancestor(floor, sha)):
+            raise RuntimeError('Published release source is outside the reviewed canonical lineage')
+    except Exception as error:
+        attempts[release['tag_name']] = {'phase': 'failed', 'release_id': release['id'],
+                                        'failed_at': control.now().isoformat(), 'reason': str(error)[:1000],
+                                        'retry_after': (control.now() + dt.timedelta(minutes=30)).isoformat()}
+        control.write('sync-state/release-attempts.json', attempts)
+        control.commit(['sync-state/release-attempts.json'], 'Record unresolved core delivery ' + release['tag_name'])
+        raise
     result = {**candidate, 'build': True, 'release': max(int(os.environ['GITHUB_RUN_NUMBER']) + 1,
                                                        int(good.get('release', 1)) + 1)}
     control.write('sync-state/status.json', {**result, 'phase': 'building', 'observed_at': control.now().isoformat()})
@@ -167,7 +183,7 @@ def bind_qualified(directory):
         native = control.api(f'repos/{control.CANONICAL}/actions/runs/{reused}')
         if (native.get('repository', {}).get('id') != REPOSITORY_ID
                 or native.get('path') != '.github/workflows/aerynos-qualify.yml'
-                or native.get('event') != 'workflow_dispatch'
+                or native.get('event') != 'workflow_dispatch' or native.get('head_branch') != 'main'
                 or native.get('status') != 'completed' or native.get('conclusion') != 'success'):
             raise ValueError('Reused native QA must be a successful trusted canonical qualification run')
     tag = os.environ['CORE_TAG']

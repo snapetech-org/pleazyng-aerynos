@@ -82,16 +82,29 @@ class ReleaseDeliveryTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertFalse(any(Path(call[call.index('--dir') + 1]).exists() for call in calls))
 
-    def test_pending_release_is_not_resolved_when_retry_backoff_applies(self):
+    def test_failed_release_backoff_does_not_block_a_new_release(self):
+        attempts = {'v3.0.29': {'phase': 'failed', 'retry_after': '2099-01-01T00:00:00+00:00'}}
+        items = [self.release(), self.release('v3.0.30')]
+        self.assertEqual(releases.choose(items, {}, attempts)['tag_name'], 'v3.0.30')
+        self.assertEqual(releases.choose(items, {}, attempts, retry=True)['tag_name'], 'v3.0.29')
+        self.assertIsNone(releases.choose([self.release()], {}, attempts))
+        attempts['v3.0.29']['phase'] = 'superseded'
+        self.assertIsNone(releases.choose([self.release()], {}, attempts, retry=True))
+
+    def test_resolution_failure_is_recorded_before_source_outputs_exist(self):
         reads = {'sync-state/promotion-hold.json': {}, 'sync-state/releases.json': {},
-                 'sync-state/status.json': {'core_tag': 'v3.0.29', 'phase': 'failed',
-                                            'retry_after': '2099-01-01T00:00:00+00:00'}}
-        with patch.object(releases, 'mirror_main', return_value='b' * 40), patch.object(control, 'refresh'), patch.object(control, 'read', side_effect=lambda p, default=None: reads[p]), \
+                 'sync-state/release-attempts.json': {}, 'sync-state/last-good.json': {}}
+        with patch.object(releases, 'mirror_main', return_value='b' * 40), patch.object(control, 'refresh'), \
+                patch.object(control, 'read', side_effect=lambda p, default=None: reads[p]), \
                 patch.object(control, 'run', return_value=SimpleNamespace(stdout=json.dumps([[self.release()]]))), \
-                patch.object(releases, 'resolve') as resolve, patch.object(releases, 'emit') as emit:
-            releases.reconcile()
-        resolve.assert_not_called()
-        emit.assert_called_once_with({'build': False, 'reason': 'failure-backoff'})
+                patch.object(releases, 'resolve', side_effect=ValueError('core assembler failed')), \
+                patch.object(control, 'write') as write, patch.object(control, 'commit') as commit:
+            with self.assertRaisesRegex(ValueError, 'core assembler failed'):
+                releases.reconcile()
+        attempt = write.call_args.args[1]['v3.0.29']
+        self.assertEqual(attempt['phase'], 'failed')
+        self.assertIn('retry_after', attempt)
+        commit.assert_called_once()
 
     def test_core_assembler_must_be_successful_trusted_and_exact(self):
         metadata = {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/build.yml',
@@ -125,9 +138,11 @@ class ReleaseDeliveryTests(unittest.TestCase):
             for metadata in [
                     {'repository': {'id': 99}},
                     {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/aerynos-qualify.yml',
-                     'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': 'failure'},
+                     'event': 'workflow_dispatch', 'head_branch': 'main', 'status': 'completed', 'conclusion': 'failure'},
                     {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/other.yml',
-                     'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': 'success'}]:
+                     'event': 'workflow_dispatch', 'head_branch': 'main', 'status': 'completed', 'conclusion': 'success'},
+                    {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/aerynos-qualify.yml',
+                     'event': 'workflow_dispatch', 'head_branch': 'unreviewed-branch', 'status': 'completed', 'conclusion': 'success'}]:
                 with self.subTest(metadata=metadata), patch.object(control, 'api', return_value=metadata), self.assertRaises(ValueError):
                     releases.bind_qualified(Path('unused'))
 

@@ -164,7 +164,7 @@ def publish(directory):
         if Path('recipe').exists():
             shutil.rmtree('recipe')
         archive.extractall('.', filter='data')
-    write('sync-state/last-good.json', {**q, 'published_at': now().isoformat(), 'release_url': release['html_url'],
+    write('sync-state/last-good.json', {**q, 'core_release': core, 'published_at': now().isoformat(), 'release_url': release['html_url'],
                                       'feed_url': f'https://github.com/{CHANNEL}/raw/refs/heads/main/feed/stone.index',
                                       'release_feed_url': f'https://github.com/{CHANNEL}/releases/download/{tag}/stone.index', 'assets': assets})
     receipts = read('sync-state/releases.json', {})
@@ -191,7 +191,13 @@ def fail(sha):
         return
     write('sync-state/status.json', {**status, 'phase': 'failed', 'failed_at': now().isoformat(),
                                    'retry_after': (now() + dt.timedelta(minutes=30)).isoformat()})
-    commit(['sync-state/status.json'], 'Retain last good feed after candidate failure ' + sha[:12])
+    paths = ['sync-state/status.json']
+    if status.get('core_tag'):
+        attempts = read('sync-state/release-attempts.json', {})
+        attempts[status['core_tag']] = read('sync-state/status.json')
+        write('sync-state/release-attempts.json', attempts)
+        paths.append('sync-state/release-attempts.json')
+    commit(paths, 'Retain last good feed after candidate failure ' + sha[:12])
 
 
 if __name__ == '__main__':
