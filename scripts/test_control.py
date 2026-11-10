@@ -9,18 +9,6 @@ import control
 
 
 class OwnerHoldTests(unittest.TestCase):
-    def test_reconcile_does_not_reenable_or_dispatch_during_owner_hold(self):
-        with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / 'outputs'
-            with patch.dict(control.os.environ, {'GITHUB_OUTPUT': str(output)}), \
-                    patch.object(control, 'refresh'), patch.object(control, 'read', return_value={'active': True}), \
-                    patch.object(control, 'run') as run, patch.object(control, 'api') as api:
-                control.reconcile()
-            self.assertIn('build=false', output.read_text())
-            self.assertIn('reason=owner-hold', output.read_text())
-            run.assert_not_called()
-            api.assert_not_called()
-
     def test_promotion_stops_before_asset_or_api_work_during_owner_hold(self):
         with patch.object(control, 'refresh'), patch.object(control, 'read', return_value={'active': True}), \
                 patch.object(control, 'validated') as validated, patch.object(control, 'api') as api:
@@ -28,35 +16,6 @@ class OwnerHoldTests(unittest.TestCase):
                 control.publish(Path('unconsumed-handoff'))
             validated.assert_not_called()
             api.assert_not_called()
-
-
-class PlanningTests(unittest.TestCase):
-    def setUp(self):
-        self.time = dt.datetime(2026, 11, 10, tzinfo=dt.timezone.utc)
-        self.sha = 'a' * 40
-
-    def test_current_source_does_not_rebuild(self):
-        result = control.plan(self.sha, {'source_sha': self.sha, 'release': 7}, {}, 8, self.time)
-        self.assertFalse(result['build'])
-
-    def test_same_version_new_sha_gets_greater_package_release(self):
-        good = {'source_sha': 'b' * 40, 'version': '3.0.22+181', 'release': 12}
-        result = control.plan(self.sha, good, {}, 2, self.time)
-        self.assertTrue(result['build'])
-        self.assertEqual(result['release'], 13)
-
-    def test_failed_source_backs_off_but_new_source_does_not(self):
-        status = {'source_sha': self.sha, 'phase': 'failed', 'retry_after': (self.time + dt.timedelta(minutes=20)).isoformat()}
-        self.assertFalse(control.plan(self.sha, {}, status, 1, self.time)['build'])
-        self.assertTrue(control.plan('c' * 40, {}, status, 2, self.time)['build'])
-        self.assertTrue(control.plan(self.sha, {}, status, 3, self.time + dt.timedelta(minutes=30))['build'])
-        self.assertTrue(control.plan(self.sha, {}, status, 3, self.time, retry=True)['build'])
-        self.assertFalse(control.plan(self.sha, {'source_sha': self.sha}, status, 3, self.time, retry=True)['build'])
-
-    def test_rejects_ambiguous_or_injected_source_names(self):
-        for value in ('main', 'a' * 12, '../main', 'a' * 40 + '\n'):
-            with self.subTest(value=value), self.assertRaises(ValueError):
-                control.plan(value, {}, {}, 1, self.time)
 
 
 class PromotionTests(unittest.TestCase):

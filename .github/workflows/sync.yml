@@ -2,18 +2,14 @@ name: Synchronize qualified aerynOS channel
 on:
   workflow_dispatch:
     inputs:
-      source_sha:
-        description: Optional full main ancestor SHA for bootstrap/recovery; empty selects current main
+      qualified_run_id:
+        description: Optional successful canonical native QA run for these exact published bytes
         type: string
         required: false
       retry_now:
         description: Retry a failed candidate immediately after fixing qualification tooling
         type: boolean
         default: false
-      producer_run_id:
-        description: Optional existing canonical candidate run for that exact source; empty builds automatically
-        type: string
-        required: false
   workflow_call:
 permissions:
   contents: read
@@ -25,10 +21,17 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      actions: write
+      actions: read
+      attestations: read
     outputs:
       build: ${{ steps.plan.outputs.build }}
       source_sha: ${{ steps.plan.outputs.source_sha }}
+      core_producer_run_id: ${{ steps.plan.outputs.core_producer_run_id }}
+      core_tag: ${{ steps.plan.outputs.core_tag }}
+      core_release_id: ${{ steps.plan.outputs.core_release_id }}
+      core_run_id: ${{ steps.plan.outputs.core_run_id }}
+      core_source_sha: ${{ steps.plan.outputs.core_source_sha }}
+      core_linux_sha256: ${{ steps.plan.outputs.core_linux_sha256 }}
       release: ${{ steps.plan.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -36,35 +39,37 @@ jobs:
           persist-credentials: false
       - name: Validate controller
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
-      - name: Resolve canonical main and preserve last-good state
+      - name: Resolve published release and original Linux producer
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}
           MANUAL_RETRY: ${{ inputs.retry_now && 'true' || 'false' }}
-          REQUESTED_SOURCE_SHA: ${{ inputs.source_sha }}
-        run: python3 scripts/control.py reconcile
+        run: python3 scripts/releases.py reconcile
   build:
     needs: plan
-    if: needs.plan.outputs.build == 'true' && inputs.producer_run_id == ''
-    permissions:
-      contents: read
-    uses: snapetech-org/pleazyng/.github/workflows/aerynos-candidate.yml@198a75e56fa4d3c96a217cf9086def0695da391b
-    with:
-      source_sha: ${{ needs.plan.outputs.source_sha }}
-  qualify:
-    needs: [plan, build]
-    if: ${{ always() && needs.plan.outputs.build == 'true' && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.producer_run_id != '')) }}
+    if: needs.plan.outputs.build == 'true' && inputs.qualified_run_id == ''
     permissions:
       contents: read
       actions: read
-    uses: snapetech-org/pleazyng/.github/workflows/aerynos-qualify.yml@198a75e56fa4d3c96a217cf9086def0695da391b
+      attestations: read
+    uses: snapetech-org/pleazyng/.github/workflows/aerynos-from-core.yml@6343663ca38e8760c60f0a94d1996e8cce52f59a
+    with:
+      source_sha: ${{ needs.plan.outputs.source_sha }}
+      producer_run_id: ${{ needs.plan.outputs.core_producer_run_id }}
+  qualify:
+    needs: [plan, build]
+    if: needs.build.result == 'success'
+    permissions:
+      contents: read
+      actions: read
+    uses: snapetech-org/pleazyng/.github/workflows/aerynos-qualify.yml@6343663ca38e8760c60f0a94d1996e8cce52f59a
     with:
       source_sha: ${{ needs.plan.outputs.source_sha }}
       release: ${{ fromJSON(needs.plan.outputs.release || '2') }}
-      producer_run_id: ${{ inputs.producer_run_id || '' }}
+      producer_run_id: ""
   publish:
     needs: [plan, qualify]
-    if: ${{ always() && needs.qualify.result == 'success' }}
+    if: ${{ always() && needs.plan.outputs.build == 'true' && (needs.qualify.result == 'success' || inputs.qualified_run_id != '') }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -77,10 +82,23 @@ jobs:
         with:
           name: aerynos-qualified-${{ needs.plan.outputs.source_sha }}
           path: ${{ runner.temp }}/qualified
+          repository: ${{ inputs.qualified_run_id && 'snapetech-org/pleazyng' || github.repository }}
+          run-id: ${{ inputs.qualified_run_id || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Publish immutable assets and atomically promote feed
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/control.py publish "$RUNNER_TEMP/qualified"
+          SOURCE_SHA: ${{ needs.plan.outputs.source_sha }}
+          QUALIFIED_RUN_ID: ${{ inputs.qualified_run_id }}
+          CORE_TAG: ${{ needs.plan.outputs.core_tag }}
+          CORE_RELEASE_ID: ${{ needs.plan.outputs.core_release_id }}
+          CORE_RUN_ID: ${{ needs.plan.outputs.core_run_id }}
+          CORE_SOURCE_SHA: ${{ needs.plan.outputs.core_source_sha }}
+          CORE_LINUX_SHA256: ${{ needs.plan.outputs.core_linux_sha256 }}
+          CORE_PRODUCER_RUN_ID: ${{ needs.plan.outputs.core_producer_run_id }}
+        run: |
+          python3 scripts/releases.py bind "$RUNNER_TEMP/qualified"
+          python3 scripts/control.py publish "$RUNNER_TEMP/qualified"
   retain-last-good:
     needs: [plan, build, qualify, publish]
     if: ${{ always() && needs.plan.outputs.build == 'true' && needs.publish.result != 'success' }}

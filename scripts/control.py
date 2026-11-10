@@ -65,59 +65,6 @@ def is_ancestor(older, newer):
     return api(f'repos/{CANONICAL}/compare/{older}...{newer}')['status'] in ('ahead', 'identical')
 
 
-def plan(sha, good, status, run_number, time, retry=False):
-    if not re.fullmatch('[0-9a-f]{40}', sha):
-        raise ValueError('Canonical source must resolve to a full SHA')
-    if good.get('source_sha') == sha:
-        return {'build': False, 'reason': 'current', 'source_sha': sha}
-    if not retry and status.get('source_sha') == sha and status.get('phase') == 'failed':
-        retry = dt.datetime.fromisoformat(status['retry_after'])
-        if time < retry:
-            return {'build': False, 'reason': 'failure-backoff', 'source_sha': sha}
-    return {'build': True, 'source_sha': sha, 'release': max(run_number + 1, int(good.get('release', 1)) + 1)}
-
-
-def reconcile():
-    refresh()
-    if read('sync-state/promotion-hold.json', {}).get('active'):
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-            output.write('build=false\nreason=owner-hold\n')
-        print('Owner hold: source scheduling and promotion remain disabled')
-        return
-    run(['gh', 'workflow', 'enable', 'reconcile.yml', '-R', CHANNEL])
-    latest = api(f'repos/{CANONICAL}/commits/main')['sha']
-    sha = os.environ.get('REQUESTED_SOURCE_SHA') or latest
-    if sha != latest and (not re.fullmatch('[0-9a-f]{40}', sha) or not is_ancestor(sha, latest)):
-        raise ValueError('Requested source is not an immutable canonical main ancestor')
-    good = read('sync-state/last-good.json', {})
-    status = read('sync-state/status.json', {})
-    if good.get('source_sha') and not is_ancestor(good['source_sha'], sha):
-        raise RuntimeError('Refusing a source older than the current feed')
-    if not good.get('source_sha'):
-        bootstrap = read('sync-state/bootstrap.json')
-        if not bootstrap or not is_ancestor(bootstrap['canonical_floor_sha'], sha):
-            raise RuntimeError('Requested source predates the reviewed bootstrap floor')
-    observed = read('sync-state/reconciliation.json', {})
-    previous_time = dt.datetime.fromisoformat(observed['observed_at']) if observed.get('observed_at') else None
-    if previous_time is None or now() - previous_time >= dt.timedelta(days=7):
-        if good.get('tag'):
-            release = api(f'repos/{CHANNEL}/releases/tags/{good["tag"]}')
-            if release['draft']:
-                raise RuntimeError('Last good release unexpectedly became a draft')
-        write('sync-state/reconciliation.json', {'canonical_main_sha': latest, 'published_source_sha': good.get('source_sha'),
-                                               'observed_at': now().isoformat(), 'last_good_release_available': bool(good.get('tag'))})
-        commit(['sync-state/reconciliation.json'], 'Record weekly canonical and last-good feed health')
-    result = plan(sha, good, status, int(os.environ['GITHUB_RUN_NUMBER']), now(), retry=os.environ.get('MANUAL_RETRY') == 'true')
-    if result['build']:
-        write('sync-state/status.json', {**result, 'phase': 'building', 'observed_at': now().isoformat(),
-                                       'run_url': os.environ['GITHUB_SERVER_URL'] + '/' + CHANNEL + '/actions/runs/' + os.environ['GITHUB_RUN_ID']})
-        commit(['sync-state/status.json'], 'Track canonical main candidate ' + sha[:12])
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-        for key, value in result.items():
-            f.write(f'{key}={str(value).lower() if isinstance(value, bool) else value}\n')
-    print(json.dumps(result))
-
-
 def validated(directory):
     directory = Path(directory)
     q = read(directory / 'qualification.json')
@@ -173,6 +120,9 @@ def publish(directory):
     if read('sync-state/promotion-hold.json', {}).get('active'):
         raise RuntimeError('Owner hold: public promotion is disabled')
     q, assets = validated(directory)
+    core = read(directory / 'core-release.json')
+    if not core or core['source_sha'] != q['source_sha'] or 'core-release.json' not in assets:
+        raise RuntimeError('Published core release binding is required')
     good = read('sync-state/last-good.json', {})
     main = api(f'repos/{CANONICAL}/commits/main')['sha']
     if not promotion_allowed(q, good, main, is_ancestor, read('sync-state/bootstrap.json')):
@@ -217,7 +167,12 @@ def publish(directory):
     write('sync-state/last-good.json', {**q, 'published_at': now().isoformat(), 'release_url': release['html_url'],
                                       'feed_url': f'https://github.com/{CHANNEL}/raw/refs/heads/main/feed/stone.index',
                                       'release_feed_url': f'https://github.com/{CHANNEL}/releases/download/{tag}/stone.index', 'assets': assets})
-    write('sync-state/status.json', {'source_sha': q['source_sha'], 'phase': 'published', 'published_at': now().isoformat()})
+    receipts = read('sync-state/releases.json', {})
+    receipts[core['tag']] = {**core, 'channel_tag': tag, 'channel_url': release['html_url'],
+                             'published_at': now().isoformat()}
+    write('sync-state/releases.json', receipts)
+    write('sync-state/status.json', {'source_sha': q['source_sha'], 'core_tag': core['tag'],
+                                    'phase': 'published', 'published_at': now().isoformat()})
     shutil.copyfile(directory / 'qualification.json', 'qualification.json')
     readme = Path('README.md')
     readme.write_text(readme.read_text().replace(
@@ -242,13 +197,10 @@ def fail(sha):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('reconcile')
     p = commands.add_parser('publish'); p.add_argument('directory', type=Path)
     p = commands.add_parser('fail'); p.add_argument('sha')
     args = parser.parse_args()
-    if args.command == 'reconcile':
-        reconcile()
-    elif args.command == 'publish':
+    if args.command == 'publish':
         publish(args.directory)
     else:
         fail(args.sha)

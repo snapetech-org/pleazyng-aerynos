@@ -76,32 +76,47 @@ The corrected fresh native scenario passes locally. Each published snapshot's
 qualification receipt lists its own completed checks. Earlier seed
 saved-connection results do not retroactively establish fresh-login qualification.
 
-## Automatic synchronization
+## Automatic release delivery
 
-The channel reconciles canonical Pleazyng `main` on a five-minute GitHub Actions
-schedule, subject to scheduling and runner availability. It builds an exact
-source snapshot, boots a fresh native aerynOS KVM guest, builds and upgrades the
-Stone, and gates publication on dependency and release-app checks. The package
-release counter advances for a new source SHA even when the app version stays
-the same. A failed candidate leaves the previous feed available.
+Canonical `main` is tracked independently in
+[sync-state/canonical-main.json](sync-state/canonical-main.json). A new commit
+updates source metadata without compiling it or changing the package feed.
+This remains distinct from the original Linux build source and final release
+assembler recorded in each delivery receipt.
 
-Qualified snapshots are immutable prereleases, independent of all-platform
-core releases. The live feed changes in one Git commit after all release
-assets and their digests are verified. Older or divergent source cannot replace
-a newer published source. Active builds are preserved and pending polls
-coalesce. Same-source failures retry after a 30-minute backoff; a new SHA is
-eligible immediately.
+The delivery controller checks published canonical releases every five minutes,
+subject to GitHub scheduling and runner availability. It processes releases from
+3.0.29 onward in version order. It verifies the attested release checksums and successful final core workflow,
+then verifies the published Linux archive and its original compiler attestation, then reuses the original core Linux artifact. It never recompiles
+the application or starts an all-platform build.
 
-See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actions),
-[synchronization status](sync-state/status.json), the last-good receipt and the
-[canonical runbook](https://github.com/snapetech-org/pleazyng/blob/main/docs/maintainers/aerynos-sync.md).
-The install command uses the current published feed. Each release also retains
-a separate pinned index.
+Every candidate must pass a fresh native aerynOS Boulder build, Moss install and
+upgrade, dependency checks, sign-in, visible playback and audio, pause, seek,
+fullscreen, background return, saved-position resume and bookmark resume.
+Only then are immutable package assets published and the feed advanced.
+A failed candidate leaves the previous feed available and retries after thirty
+minutes. Manual delivery can retry immediately after a repair. Completed release
+receipts prevent duplicate publication; older or divergent sources cannot replace
+newer qualified packages.
 
-A weekly health commit records source/feed availability to keep reconciliation
-active. Manual `sync.yml` can re-enable the schedule with this repository's
-scoped Actions token. No organization secret, deployment key, App grant or
-canonical push hook is required.
+For recovered core releases, the Linux package and source archive retain the
+original compiler source and producer identity. A separate `core-release.json`
+binds those bytes to the published all-platform release. It does not represent
+an overall failed original producer run as a successful core release.
+
+Deployment status is recorded in [promotion-hold.json](sync-state/promotion-hold.json).
+While its hold is active, delivery does not stage or publish anything. The
+scheduled workflow must also be enabled explicitly; the controller never
+re-enables schedules itself. A successful canonical native QA preflight can be
+reused through the manual `qualified_run_id` input; its trusted workflow identity,
+completed checks, source, version and exact Linux bytes are checked again before
+publication. See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actions),
+[delivery status](sync-state/status.json), and
+[completed release receipts](sync-state/releases.json).
+
+The current install command remains pinned to the tested seed until the first
+new qualified package promotes the live feed. No official aerynOS repository
+submission is part of this independent distribution channel.
 
 ## Source and licensing
 
