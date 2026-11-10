@@ -59,19 +59,21 @@ attestation and is not an all-platform core application release.
 The immutable v3.0.7 input failed visible-video QA and is not distributed here.
 See the [historical record](https://github.com/snapetech-org/pleazyng/blob/main/docs/maintainers/aerynos-qualification.md).
 
-## Fresh sign-in and input methods
+## Native input qualification
 
-A fresh-install test of the seed package found empty password input with the
-default GTK input method. The bundle also lacked its input-method module cache.
-Generating that cache allowed one diagnostic relaunch to sign in, but a fully
-fresh packaged-cache test still failed. Native pointer/keyboard focus is under
-investigation; the cache defect is not established as the sole cause. Forcing
-a simple input method was a diagnostic only.
+Fresh sign-in uses a real pointer click in the observed password field before
+keyboard typing. A semantic accessibility Tap alone can leave the native
+Wayland window without keyboard focus. The QA harness also keeps one
+accessibility client connected throughout the scenario; repeated short-lived
+clients reproduced a GTK event-listener crash during key navigation.
 
-New snapshots must build and relocate that cache and pass fresh keyboard-driven
-sign-in in the ordinary installed app. The seed's earlier saved-connection
-relaunch does not establish fresh-login qualification. Consult the current
-qualification receipt for the checks actually completed for each snapshot.
+The seed bundle separately lacked its input-method module cache. New recipes
+build and relocate the cache against all shipped GTK modules, preserving locale
+input methods. No simple input-method override is part of qualification.
+
+The corrected fresh native scenario passes locally. Each published snapshot's
+qualification receipt lists its own completed checks. Earlier seed
+saved-connection results do not retroactively establish fresh-login qualification.
 
 ## Automatic synchronization
 
@@ -92,8 +94,8 @@ eligible immediately.
 See [Actions](https://github.com/snapetech-org/pleazyng-aerynos/actions),
 [synchronization status](sync-state/status.json), the last-good receipt and the
 [canonical runbook](https://github.com/snapetech-org/pleazyng/blob/main/docs/maintainers/aerynos-sync.md).
-The first automatic promotion switches the install command above from the seed
-to the maintained feed. Each release retains a separate pinned index.
+The install command uses the current published feed. Each release also retains
+a separate pinned index.
 
 A weekly health commit records source/feed availability to keep reconciliation
 active. Manual `sync.yml` can re-enable the schedule with this repository's
