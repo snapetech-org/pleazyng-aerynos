@@ -125,7 +125,7 @@ def resolve(release):
         if core_source != tag_source:
             recovery = packaging_recovery.verify(release, temporary, checksums.read_text(),
                 product_source=tag_source, compiler_source=source, workflow_source=core_source,
-                producer_run=producer, assembly_run=core_run, linux_sha256=checksum)
+                producer_run=producer, assembly_run=core_run, linux_sha256=checksum, verify_file=verify_file)
     # Keep original Linux compilation and successful final assembly separate.
     return {'source_sha': source, 'core_producer_run_id': producer, 'core_tag': release['tag_name'],
             'core_release_id': release['id'], 'core_linux_sha256': checksum,
@@ -278,7 +278,7 @@ def bind_qualified(directory):
             recovery = packaging_recovery.verify(release, temporary, checksums.read_text(),
                 product_source=tag_source, compiler_source=q['source_sha'], workflow_source=os.environ['CORE_SOURCE_SHA'],
                 producer_run=int(os.environ['CORE_PRODUCER_RUN_ID']), assembly_run=int(os.environ['CORE_RUN_ID']),
-                linux_sha256=checksum)
+                linux_sha256=checksum, verify_file=verify_file)
         if (recovery['packaging_source_sha'] != os.environ.get('CORE_PACKAGING_SOURCE_SHA')
                 or recovery['receipt_sha256'] != os.environ.get('CORE_RECOVERY_SHA256')):
             raise ValueError('Approved packaging recovery changed after native qualification')

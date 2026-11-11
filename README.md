@@ -135,6 +135,12 @@ These checks run again before promotion. A receipt claiming equivalence alone
 is rejected. `core-release.json` records the separate product, packaging and
 workflow sources, compiler/assembler run IDs and recovery proof digest.
 
+A completed tvOS output may be reused while repairing iOS. Its producer must
+have passed signed build, attestation and upload steps for a separately approved
+repair of the same frozen product. The consumer verifies that producer's Git
+approval and artifact identity, then checks both published tvOS IPAs against
+their original producer certificates and the final attested checksums.
+
 Deployment status is recorded in [promotion-hold.json](sync-state/promotion-hold.json).
 While its hold is active, delivery does not stage or publish anything. The
 scheduled workflow must also be enabled explicitly; the controller never

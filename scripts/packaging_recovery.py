@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 import control
-from verify_frozen_packaging_repair import verify_receipt
+from verify_frozen_packaging_repair import verify_receipt, verify_frozen_packaging_repair
 
 RECEIPT = 'platform-reuse-provenance.json'
 REPOSITORY_ID = 1433487464
@@ -18,6 +18,8 @@ REUSED = {'Validate release request', 'Build Linux (x64)', 'Build Linux (arm64)'
 ARTIFACTS = {'pleazyng-tizen-arm-experimental', 'macos-dmg', 'windows-x64-portable',
              'windows-arm64-build', 'windows-installer', 'windows-chocolatey',
              'linux-x64', 'linux-arm64', 'linux-x64-appimage', 'android-apk', 'webos-ipk'}
+TV_JOB = 'Build tvOS developer package (arm64)'
+TV_PACKAGES = ('pleazyng-tvos-unsigned.ipa', 'pleazyng-tvos-appstore.ipa')
 
 
 def require(condition, message):
@@ -72,7 +74,7 @@ def manifest(source):
     return json.loads(payload)['release']['releaseGate']['requiredJobs']
 
 
-def verify_original(receipt, source, producer):
+def verify_original(receipt, source, producer, *, reused_tvos=False):
     run = trusted_run(producer, source)
     items = jobs(producer, run['run_attempt'])
     required = manifest(source)
@@ -87,7 +89,7 @@ def verify_original(receipt, source, producer):
     successful(items, 'Freeze qualified source')
     for name in REUSED | {'build-android', 'Build WebOS TV package (ARMv7)'}:
         successful(items, name)
-    for name in APPLE - set(receipt['rebuilt_jobs']):
+    for name in APPLE - set(receipt['rebuilt_jobs']) - ({TV_JOB} if reused_tvos else set()):
         successful(items, name)
     attempted = [item for item in items if item.get('name') == 'create-release']
     require(len(attempted) == 1 and attempted[0].get('conclusion') == 'skipped',
@@ -101,26 +103,82 @@ def verify_artifacts(receipt, source, producer):
     require(isinstance(records, list) and records, 'Recovery artifact inventory is missing')
     names = set()
     for item in records:
+        tvos = receipt.get('tvos_source') if isinstance(item, dict) and item.get('name') == 'tvos-ipa' else None
+        run = tvos['source_run_id'] if tvos else producer
+        checkout = tvos['source_sha'] if tvos else source
+        workflow = tvos['workflow_source_sha'] if tvos else source
         require(isinstance(item, dict) and isinstance(item.get('name'), str) and item['name']
-                and item['name'] not in names and item.get('source_run_id') == producer
-                and item.get('source_sha') == source and type(item.get('artifact_id')) is int
+                and item['name'] not in names and item.get('source_run_id') == run
+                and item.get('source_sha') == checkout and type(item.get('artifact_id')) is int
                 and item['artifact_id'] > 0 and re.fullmatch('sha256:[0-9a-f]{64}', str(item.get('digest', ''))),
                 'Recovery artifact identity differs from the original frozen producer')
         names.add(item['name'])
         actual = control.api(f'repos/{control.CANONICAL}/actions/artifacts/{item["artifact_id"]}')
         require(actual.get('id') == item['artifact_id'] and actual.get('name') == item['name']
                 and actual.get('digest') == item['digest'] and actual.get('expired') is False
-                and actual.get('workflow_run', {}).get('id') == producer
-                and actual.get('workflow_run', {}).get('head_sha') == source,
+                and actual.get('workflow_run', {}).get('id') == run
+                and actual.get('workflow_run', {}).get('head_sha') == workflow,
                 'Original artifact metadata differs from the attested recovery record')
+        if tvos:
+            require(item['artifact_id'] == tvos['artifact_id'] and item['digest'] == tvos['artifact_digest'],
+                    'Reused tvOS artifact differs from its separately verified producer')
     expected = ARTIFACTS | ({'ios-ipa'} if 'build-ios' not in receipt['rebuilt_jobs'] else set())
     expected |= {'tvos-ipa'} if 'Build tvOS developer package (arm64)' not in receipt['rebuilt_jobs'] else set()
     require(expected <= names and names <= expected | {'windows-msix'},
             'Recovery reused artifact coverage is incomplete or unexpected')
 
 
+def verify_tvos(receipt, release, directory, checksums, product, original_run, workflow, assembly_run, verify_file):
+    """Reuse only a fully qualified TV output from another approved same-product repair."""
+    source = receipt['tvos_source']
+    require(isinstance(source, dict) and source.get('product_source_sha') == product
+            and source.get('original_source_run_id') == original_run and source.get('platforms_complete') is True
+            and type(source.get('source_run_id')) is int and source['source_run_id'] > 0
+            and source['source_run_id'] not in (original_run, assembly_run)
+            and type(source.get('job_id')) is int and source['job_id'] > 0
+            and type(source.get('run_attempt')) is int and source['run_attempt'] > 0
+            and type(source.get('artifact_id')) is int and source['artifact_id'] > 0
+            and re.fullmatch('sha256:[0-9a-f]{64}', str(source.get('artifact_digest', ''))),
+            'Reused tvOS source does not bind the same frozen product and original CI')
+    proof = verify_frozen_packaging_repair(product, source.get('source_sha'),
+        source.get('workflow_source_sha'), control.api)
+    require(source.get('packaging_approval') == proof, 'Reused tvOS packaging approval differs from independent Git proof')
+    old_workflow = source['workflow_source_sha']
+    ancestry = control.api(f'repos/{control.CANONICAL}/compare/{old_workflow}...{workflow}')
+    require(ancestry.get('status') == 'ahead' and ancestry.get('base_commit', {}).get('sha') == old_workflow
+            and ancestry.get('merge_base_commit', {}).get('sha') == old_workflow and ancestry.get('behind_by') == 0,
+            'Reused tvOS workflow is not an ancestor of the final assembler')
+    run = trusted_run(source['source_run_id'], old_workflow)
+    require(run['run_attempt'] == source['run_attempt'] and re.fullmatch(
+        'action:release:pool:[a-z-]+:tag:' + re.escape(release['tag_name']) + ':repair:' + source['source_sha'],
+        str(run.get('display_title', ''))), 'Reused tvOS run does not identify the approved repair/attempt')
+    items = jobs(source['source_run_id'], source['run_attempt'])
+    validation = successful(items, 'Validate release request')
+    successful(validation.get('steps', []), 'Check out the approved packaging source')
+    job = successful(items, TV_JOB)
+    require(job.get('id') == source['job_id'], 'Reused tvOS job identity changed')
+    for name in ('Build tvOS app', 'Package unsigned tvOS developer IPA', 'Build signed tvOS App Store IPA',
+                 'Attest unsigned tvOS developer package', 'Attest signed tvOS App Store package', 'Upload tvOS package'):
+        successful(job.get('steps', []), name)
+    packages = source.get('package_sha256')
+    require(isinstance(packages, dict) and set(packages) == set(TV_PACKAGES) and callable(verify_file),
+            'Reused tvOS packages need their original independently verified certificates')
+    for name in TV_PACKAGES:
+        digest = checksum_for(checksums, name)
+        assets = [asset for asset in release['assets'] if asset['name'] == name]
+        require(packages[name] == digest and len(assets) == 1 and assets[0].get('digest') == 'sha256:' + digest,
+                'Published tvOS package differs from its original qualified producer')
+        control.run(['gh', 'release', 'download', release['tag_name'], '--repo', control.CANONICAL,
+                     '--pattern', name, '--dir', str(directory)])
+        path = Path(directory) / name
+        require(hashlib.sha256(path.read_bytes()).hexdigest() == digest
+                and verify_file(path) == (old_workflow, source['source_run_id']),
+                'Reused tvOS package certificate/digest does not bind its original workflow and producer')
+    return source
+
+
 def verify(release, directory, checksums, *, product_source, compiler_source, workflow_source,
-           producer_run, assembly_run, linux_sha256):
+           producer_run, assembly_run, linux_sha256, verify_file=None):
     """Checksums and Linux certificate identities must already be verified."""
     require(compiler_source == product_source, 'Linux compiler source must equal the frozen version tag')
     assets = [item for item in release['assets'] if item['name'] == RECEIPT]
@@ -151,12 +209,17 @@ def verify(release, directory, checksums, *, product_source, compiler_source, wo
             and set(rebuilt) <= APPLE, 'Only approved failed Apple platform rebuilding is supported')
     flags = {name for name, key in (('build-ios', 'rebuild_ios'),
              ('Build tvOS developer package (arm64)', 'rebuild_tvos')) if receipt.get(key) is True}
+    reused_tv = None
+    if 'tvos_source' in receipt:
+        require(flags == {'build-ios'}, 'Reused tvOS permits only iOS rebuilding in the final assembly')
+        reused_tv = verify_tvos(receipt, release, directory, checksums, product_source, producer_run,
+                                 workflow_source, assembly_run, verify_file)
     require(set(rebuilt) == flags and set(receipt.get('reused_jobs', [])) == REUSED | (APPLE - flags),
             'Recovery reused/rebuilt platform contract is incomplete')
     for alias in ('android_source', 'webos_source'):
         require(receipt.get(alias, {}).get('source_run_id') == producer_run
                 and receipt[alias].get('source_sha') == product_source, 'Non-Apple platform source changed during repair')
-    verify_original(receipt, product_source, producer_run)
+    verify_original(receipt, product_source, producer_run, reused_tvos=bool(reused_tv))
     assembly = trusted_run(assembly_run, workflow_source, completed_success=True)
     assembly_jobs = jobs(assembly_run, assembly['run_attempt'])
     for name in rebuilt:
@@ -165,4 +228,7 @@ def verify(release, directory, checksums, *, product_source, compiler_source, wo
         successful(job.get('steps', []), label)
     successful(assembly_jobs, 'create-release')
     verify_artifacts(receipt, product_source, producer_run)
-    return {'packaging_source_sha': packaging, 'receipt_sha256': expected, 'approval': proof}
+    result = {'packaging_source_sha': packaging, 'receipt_sha256': expected, 'approval': proof}
+    if reused_tv:
+        result['tvos_source'] = reused_tv
+    return result

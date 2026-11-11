@@ -14,6 +14,8 @@ S, R, W = ('a' * 40, 'b' * 40, 'c' * 40)
 P, A = 42, 43
 LINUX = 'd' * 64
 APPROVAL = {'independently_verified': 'fixture'}
+TV_RUN, TV_R, TV_W = 44, 'f' * 40, 'e' * 40
+TV_APPROVAL = {'independently_verified': 'earlier TV repair'}
 
 
 class PackagingRecoveryTests(unittest.TestCase):
@@ -44,12 +46,26 @@ class PackagingRecoveryTests(unittest.TestCase):
             self.assembly_jobs.append({**self.job(name), 'steps': [self.job(
                 'Build signed iOS App Store IPA' if name == 'build-ios' else 'Build signed tvOS App Store IPA')]})
         self.bad_artifact = False
+        self.packages = {}
+        self.tv_certificate = (TV_W, TV_RUN)
+        self.tv_artifact_head = TV_W
 
     def job(self, name, conclusion='success'):
         return {'name': name, 'status': 'completed', 'conclusion': conclusion}
 
     def api(self, path):
         prefix = 'repos/' + control.CANONICAL
+        if path == f'{prefix}/compare/{TV_W}...{W}':
+            return {'status': 'ahead', 'base_commit': {'sha': TV_W},
+                    'merge_base_commit': {'sha': TV_W}, 'behind_by': 0}
+        if path == f'{prefix}/actions/runs/{TV_RUN}':
+            return {'id': TV_RUN, 'repository': {'id': recovery.REPOSITORY_ID},
+                    'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': TV_W,
+                    'head_branch': 'main', 'event': 'workflow_dispatch', 'path': '.github/workflows/build.yml',
+                    'display_title': 'action:release:pool:private:tag:v3.0.31:repair:' + TV_R,
+                    'status': 'completed', 'conclusion': 'failure', 'run_attempt': 1}
+        if path == f'{prefix}/actions/runs/{TV_RUN}/attempts/1/jobs?per_page=100':
+            return {'total_count': len(self.tv_jobs), 'jobs': copy.deepcopy(self.tv_jobs)}
         for run_id, source in ((P, S), (A, W)):
             if path == f'{prefix}/actions/runs/{run_id}':
                 return {'id': run_id, 'repository': {'id': recovery.REPOSITORY_ID},
@@ -67,25 +83,33 @@ class PackagingRecoveryTests(unittest.TestCase):
         if '/actions/artifacts/' in path:
             identifier = int(path.rsplit('/', 1)[1])
             item = next(item for item in self.receipt['artifacts'] if item['artifact_id'] == identifier)
+            run, head = (TV_RUN, self.tv_artifact_head) if item['name'] == 'tvos-ipa' else (P, S)
             return {'id': identifier, 'name': item['name'], 'digest': item['digest'],
-                    'expired': self.bad_artifact, 'workflow_run': {'id': P, 'head_sha': S}}
+                    'expired': self.bad_artifact, 'workflow_run': {'id': run, 'head_sha': head}}
         raise AssertionError('Unexpected API request: ' + path)
 
     def verify(self, *, payload=None, compiler=S, graph_error=None):
         payload = json.dumps(self.receipt).encode() if payload is None else payload
         checksum = hashlib.sha256(payload).hexdigest()
         release = {'tag_name': 'v3.0.31', 'assets': [{'name': recovery.RECEIPT, 'digest': 'sha256:' + checksum}]}
+        checksums = checksum + '  ' + recovery.RECEIPT + '\n'
+        for name, data in self.packages.items():
+            digest = hashlib.sha256(data).hexdigest()
+            release['assets'].append({'name': name, 'digest': 'sha256:' + digest})
+            checksums += digest + '  ' + name + '\n'
 
         def download(arguments):
-            target = Path(arguments[arguments.index('--dir') + 1]) / recovery.RECEIPT
-            target.write_bytes(payload)
+            name = arguments[arguments.index('--pattern') + 1]
+            target = Path(arguments[arguments.index('--dir') + 1]) / name
+            target.write_bytes(payload if name == recovery.RECEIPT else self.packages[name])
 
         with tempfile.TemporaryDirectory() as directory, patch.object(control, 'run', side_effect=download), \
                 patch.object(control, 'api', side_effect=self.api), \
+                patch.object(recovery, 'verify_frozen_packaging_repair', return_value=TV_APPROVAL), \
                 patch.object(recovery, 'verify_receipt', return_value=APPROVAL, side_effect=graph_error) as graph:
-            result = recovery.verify(release, directory, checksum + '  ' + recovery.RECEIPT + '\n',
+            result = recovery.verify(release, directory, checksums,
                 product_source=S, compiler_source=compiler, workflow_source=W,
-                producer_run=P, assembly_run=A, linux_sha256=LINUX)
+                producer_run=P, assembly_run=A, linux_sha256=LINUX, verify_file=lambda path: self.tv_certificate)
         self.assertEqual(graph.call_args.kwargs['product_source_sha'], S)
         self.assertEqual(graph.call_args.kwargs['workflow_source_sha'], W)
         self.assertEqual(graph.call_args.kwargs['source_run_id'], P)
@@ -140,6 +164,58 @@ class PackagingRecoveryTests(unittest.TestCase):
             self.verify()
         with self.assertRaises(ValueError):
             recovery.checksum_for(('f' * 64 + '  receipt.json\n') * 2, 'receipt.json')
+
+    def enable_tv_reuse(self):
+        self.packages = {name: ('original qualified ' + name).encode() for name in recovery.TV_PACKAGES}
+        self.receipt.update(rebuild_tvos=False, rebuilt_jobs=['build-ios'],
+                            reused_jobs=sorted(recovery.REUSED | {recovery.TV_JOB}))
+        self.assembly_jobs = [item for item in self.assembly_jobs if item['name'] != recovery.TV_JOB]
+        self.receipt['tvos_source'] = {
+            'source_run_id': TV_RUN, 'source_sha': TV_R, 'workflow_source_sha': TV_W,
+            'product_source_sha': S, 'original_source_run_id': P, 'job_id': 700, 'run_attempt': 1,
+            'packaging_approval': TV_APPROVAL, 'artifact_id': 777, 'artifact_digest': 'sha256:' + 'f' * 64,
+            'platforms_complete': True,
+            'package_sha256': {name: hashlib.sha256(data).hexdigest() for name, data in self.packages.items()},
+        }
+        self.receipt['artifacts'].append({'name': 'tvos-ipa', 'artifact_id': 777, 'digest': 'sha256:' + 'f' * 64,
+                                          'source_run_id': TV_RUN, 'source_sha': TV_R})
+        self.tv_jobs = [{**self.job('Validate release request'),
+                         'steps': [self.job('Check out the approved packaging source')]},
+                        {**self.job(recovery.TV_JOB), 'id': 700, 'steps': [self.job(name) for name in (
+                            'Build tvOS app', 'Package unsigned tvOS developer IPA', 'Build signed tvOS App Store IPA',
+                            'Attest unsigned tvOS developer package', 'Attest signed tvOS App Store package', 'Upload tvOS package')]}]
+
+    def test_reused_tv_binds_separate_approved_source_job_artifact_and_original_certificates(self):
+        self.enable_tv_reuse()
+        result = self.verify()
+        self.assertEqual(result['tvos_source']['source_sha'], TV_R)
+        self.assertEqual(result['tvos_source']['workflow_source_sha'], TV_W)
+        self.assertNotEqual(TV_R, TV_W)
+
+    def test_tv_reuse_rejects_changed_product_ci_job_approval_and_package_digest(self):
+        self.enable_tv_reuse()
+        baseline = copy.deepcopy(self.receipt['tvos_source'])
+        for change in ({'product_source_sha': R}, {'original_source_run_id': A}, {'job_id': 701},
+                       {'packaging_approval': APPROVAL}, {'run_attempt': 2},
+                       {'package_sha256': {name: '0' * 64 for name in recovery.TV_PACKAGES}}):
+            with self.subTest(change=change):
+                self.receipt['tvos_source'] = {**copy.deepcopy(baseline), **change}
+                with self.assertRaises(ValueError):
+                    self.verify()
+
+    def test_tv_reuse_needs_old_workflow_certificate_and_zip_head_not_checkout_sha(self):
+        self.enable_tv_reuse()
+        self.tv_certificate = (W, A)
+        with self.assertRaisesRegex(ValueError, 'certificate/digest'):
+            self.verify()
+        self.tv_certificate = (TV_W, TV_RUN)
+        self.tv_artifact_head = TV_R
+        with self.assertRaisesRegex(ValueError, 'artifact metadata'):
+            self.verify()
+        self.tv_artifact_head = TV_W
+        self.tv_jobs[1]['steps'][-1]['conclusion'] = 'skipped'
+        with self.assertRaisesRegex(ValueError, 'Upload tvOS package'):
+            self.verify()
 
 
 if __name__ == '__main__':
