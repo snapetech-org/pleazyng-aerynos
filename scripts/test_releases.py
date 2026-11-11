@@ -202,18 +202,15 @@ class ReleaseDeliveryTests(unittest.TestCase):
                 releases.completed_core('b' * 40, 99)
 
     def test_source_tracking_updates_metadata_without_compiling_or_promoting(self):
-        with patch.object(control, 'api', return_value={'sha': 'a' * 40}), \
-                patch.object(control, 'read', return_value={}), patch.object(control, 'write') as write, \
+        import source_sync
+        with patch.object(source_sync, 'sync', return_value={'source_sha': 'a' * 40}), \
+                patch.object(control, 'refresh') as refresh, patch.object(control, 'write') as write, \
                 patch.object(control, 'commit') as commit, patch.object(control, 'run') as run:
             self.assertEqual(releases.mirror_main(), 'a' * 40)
-        write.assert_called_once()
-        commit.assert_called_once()
-        run.assert_not_called()
-        with patch.object(control, 'api', return_value={'sha': 'a' * 40}), \
-                patch.object(control, 'read', return_value={'source_sha': 'a' * 40}), \
-                patch.object(control, 'write') as write:
-            releases.mirror_main()
+        refresh.assert_called_once()
         write.assert_not_called()
+        commit.assert_not_called()
+        run.assert_not_called()
 
     def test_cross_repository_native_reuse_is_rejected_before_api_access(self):
         q = {'source_sha': 'a' * 40}

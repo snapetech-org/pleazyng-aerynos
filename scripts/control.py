@@ -14,6 +14,7 @@ import tarfile
 
 CANONICAL = 'snapetech-org/pleazyng'
 CHANNEL = 'snapetech-org/pleazyng-aerynos'
+SOURCE_TRACKING_PATH = 'sync-state/canonical-main.json'
 REQUIRED = {'native_boulder_build', 'native_moss_install', 'native_moss_upgrade', 'installed_elf', 'bundled_im_cache', 'ordinary_release_launch',
             'background_return_playing', 'background_return_paused', 'route_resume', 'bookmark_resume', 'audio_clock',
             'jellyfin_sign_in', 'dv_default_on', 'fallback_default_on', 'visible_h264', 'pause', 'seek', 'fullscreen',
@@ -56,8 +57,28 @@ def commit(paths, message):
     if subprocess.run(['git', 'diff', '--cached', '--quiet']).returncode == 0:
         return
     run(['git', 'commit', '-m', message])
-    # Ordinary fast-forward push: another writer wins rather than being overwritten.
-    run(['git', '-c', 'credential.helper=!gh auth git-credential', 'push', 'origin', 'HEAD:main'])
+    for _ in range(3):
+        try:
+            run(['git', '-c', 'credential.helper=!gh auth git-credential', 'push', 'origin', 'HEAD:main'])
+            return
+        except subprocess.CalledProcessError:
+            run(['git', 'fetch', 'origin', 'main'])
+            if subprocess.run(['git', 'merge-base', '--is-ancestor', 'HEAD', 'origin/main'],
+                              capture_output=True).returncode == 0:
+                return  # The push succeeded remotely but its acknowledgement was lost.
+            parent = run(['git', 'rev-parse', 'HEAD^']).stdout.strip()
+            if subprocess.run(['git', 'merge-base', '--is-ancestor', parent, 'origin/main'],
+                              capture_output=True).returncode != 0:
+                raise RuntimeError('Channel main diverged; preserve the unpublished candidate') from None
+            remote = set(run(['git', 'log', '--diff-merges=first-parent', '--format=', '--name-only',
+                              f'{parent}..origin/main']).stdout.splitlines()) - {''}
+            local = set(run(['git', 'diff', '--name-only', parent, 'HEAD']).stdout.splitlines())
+            if remote != {SOURCE_TRACKING_PATH} or SOURCE_TRACKING_PATH in local:
+                raise RuntimeError('Concurrent channel changes require reconciliation; candidate preserved') from None
+            # Only this unpublished local commit is replayed. Feed/qualification
+            # changes on remote main are never merged or overwritten here.
+            run(['git', '-c', 'core.hooksPath=/dev/null', 'rebase', 'origin/main'])
+    raise RuntimeError('Source metadata kept advancing during channel publication; candidate preserved')
 
 
 def is_ancestor(older, newer):

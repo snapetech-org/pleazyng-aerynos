@@ -143,16 +143,12 @@ def emit(result):
 
 
 def mirror_main():
-    latest = control.api(f'repos/{control.CANONICAL}/commits/main')['sha']
-    if not re.fullmatch('[0-9a-f]{40}', latest):
-        raise ValueError('Canonical main did not resolve to an immutable commit')
-    previous = control.read('sync-state/canonical-main.json', {})
-    if previous.get('source_sha') != latest:
-        control.write('sync-state/canonical-main.json', {
-            'source_sha': latest, 'source_url': f'https://github.com/{control.CANONICAL}/commit/{latest}',
-            'observed_at': control.now().isoformat(), 'purpose': 'source tracking; not package qualification'})
-        control.commit(['sync-state/canonical-main.json'], 'Track canonical main ' + latest[:12])
-    return latest
+    import source_sync
+    result = source_sync.sync()
+    # The pointer was committed through the Contents API. Start subsequent
+    # delivery decisions from that fresh main, never from the earlier checkout.
+    control.refresh()
+    return result['source_sha']
 
 
 def next_release(good, status, run_number):

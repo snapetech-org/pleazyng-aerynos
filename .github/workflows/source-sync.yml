@@ -1,0 +1,33 @@
+name: Track canonical main source
+on:
+  repository_dispatch:
+    types: [canonical-main-updated]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aerynos-source-tracking
+  cancel-in-progress: false
+jobs:
+  source:
+    if: github.repository == 'snapetech-org/pleazyng-aerynos' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Track authoritative source only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/source_sync.py --receipt "$RUNNER_TEMP/source-sync.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: source-sync-receipt
+          path: ${{ runner.temp }}/source-sync.json
+          if-no-files-found: warn
+          retention-days: 30

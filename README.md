@@ -89,10 +89,22 @@ updates source metadata without compiling it or changing the package feed.
 This remains distinct from the original Linux build source and final release
 assembler recorded in each delivery receipt.
 
+The metadata-only `source-sync.yml` receiver accepts a
+`canonical-main-updated` repository dispatch or a manual wake. The event is only
+a wake-up: the receiver fetches the canonical repository identity and current
+`main` itself, checks ancestry, and updates only the source pointer with a
+bounded compare-and-swap. It never builds an app, qualifies a package or advances
+the feed. The canonical push hook needs existing Contents-write access to this
+repository; polling remains a catch-up path, not a guaranteed delivery interval.
+
+Source tracking has its own concurrency group. A publication push may replay
+its unpublished commit over concurrent source-pointer-only updates. Changes to
+the feed, hold, qualification or any other remote path stop publication for
+reconciliation instead; published history is never rewritten.
+
 The canonical release controller wakes this consumer after core publication;
-the five-minute schedule also catches pending deliveries. The delivery controller
-checks published canonical releases every five minutes,
-subject to GitHub scheduling and runner availability. It processes releases from
+a workflow scheduled every five minutes provides catch-up, subject to GitHub
+scheduling and runner availability. The delivery controller processes releases from
 3.0.29 onward in version order. It verifies the attested release checksums and successful final core workflow,
 then verifies the published Linux archive and its original compiler attestation,
 and stages those exact public bytes for native QA. Staging uses anonymous release
