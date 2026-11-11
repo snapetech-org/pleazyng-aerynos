@@ -131,6 +131,15 @@ class HandoffTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 control.validated(root)
 
+    def test_server_playback_alone_cannot_qualify_the_direct_open_media_route(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            q = self.handoff(root)
+            q['checks'].remove('open_media_direct_h264')
+            (root / 'qualification.json').write_text(json.dumps(q))
+            with self.assertRaisesRegex(RuntimeError, 'Required native qualification is incomplete'):
+                control.validated(root)
+
     def test_false_gate_mapping_is_not_accepted_as_passed_checks(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

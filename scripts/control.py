@@ -16,7 +16,8 @@ CANONICAL = 'snapetech-org/pleazyng'
 CHANNEL = 'snapetech-org/pleazyng-aerynos'
 REQUIRED = {'native_boulder_build', 'native_moss_install', 'native_moss_upgrade', 'installed_elf', 'bundled_im_cache', 'ordinary_release_launch',
             'background_return_playing', 'background_return_paused', 'route_resume', 'bookmark_resume', 'audio_clock',
-            'jellyfin_sign_in', 'dv_default_on', 'fallback_default_on', 'visible_h264', 'pause', 'seek', 'fullscreen'}
+            'jellyfin_sign_in', 'dv_default_on', 'fallback_default_on', 'visible_h264', 'pause', 'seek', 'fullscreen',
+            'open_media_direct_h264'}
 
 
 def run(args, **kwargs):
