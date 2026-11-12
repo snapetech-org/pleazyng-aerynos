@@ -236,8 +236,24 @@ def bind_qualified(directory):
     q, qualified_assets = control.validated(directory)
     if q['source_sha'] != os.environ['SOURCE_SHA']:
         raise ValueError('Native source differs from the release plan')
-    if os.environ.get('QUALIFIED_RUN_ID'):
-        raise ValueError('Cross-repository native QA reuse is unsupported; qualify in the current delivery run')
+    qualified_run_id = os.environ.get('QUALIFIED_RUN_ID')
+    if qualified_run_id:
+        if not re.fullmatch(r'[1-9][0-9]*', qualified_run_id):
+            raise ValueError('Invalid native qualification run ID')
+        run_id = int(qualified_run_id)
+        run = control.api(f'repos/{control.CHANNEL}/actions/runs/{run_id}')
+        jobs = control.api(f'repos/{control.CHANNEL}/actions/runs/{run_id}/jobs?per_page=100')['jobs']
+        artifacts = control.api(f'repos/{control.CHANNEL}/actions/runs/{run_id}/artifacts?per_page=100')['artifacts']
+        name = 'aerynos-qualified-' + q['source_sha']
+        if (run.get('repository', {}).get('full_name') != control.CHANNEL
+                or run.get('path') != '.github/workflows/sync.yml'
+                or run.get('status') != 'completed'
+                or run.get('event') not in ('workflow_dispatch', 'workflow_call')
+                or len([job for job in jobs if job['name'] == 'qualify / Native aerynOS install and release-app QA'
+                        and job['conclusion'] == 'success']) != 1
+                or len([artifact for artifact in artifacts if artifact['name'] == name
+                        and not artifact['expired']]) != 1):
+            raise ValueError('Reusable native QA must be a successful artifact from this channel workflow')
     tag = os.environ['CORE_TAG']
     release = control.api(f'repos/{control.CANONICAL}/releases/tags/{tag}')
     if (release.get('tag_name') != tag or release.get('draft') or not release.get('published_at')
@@ -285,7 +301,7 @@ def bind_qualified(directory):
                'linux_producer_run_id': provenance['producer_run_id'],
                'assembler_run_id': int(os.environ['CORE_RUN_ID']),
                'assembler_source_sha': os.environ['CORE_SOURCE_SHA'], 'version_tag_source_sha': tag_source,
-               'qualification_run_id': int(os.environ.get('GITHUB_RUN_ID', '0'))}
+               'qualification_run_id': int(qualified_run_id or os.environ.get('GITHUB_RUN_ID', '0'))}
     if recovery:
         receipt['packaging_recovery'] = recovery
     path = directory / 'core-release.json'

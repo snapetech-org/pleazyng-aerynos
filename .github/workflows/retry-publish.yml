@@ -1,0 +1,53 @@
+name: Promote qualified aerynOS package
+on:
+  workflow_dispatch:
+    inputs:
+      core_tag:
+        description: Published canonical core release tag
+        required: true
+        type: string
+      source_sha:
+        description: Exact qualified source SHA used in the artifact name
+        required: true
+        type: string
+      qualified_run_id:
+        description: This repository's successful native qualification run
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: aerynos-qualified-feed
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+      attestations: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: aerynos-qualified-${{ inputs.source_sha }}
+          path: ${{ runner.temp }}/qualified
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.qualified_run_id }}
+          github-token: ${{ github.token }}
+      - name: Bind verified core release and promote qualified package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_TAG: ${{ inputs.core_tag }}
+          QUALIFIED_RUN_ID: ${{ inputs.qualified_run_id }}
+        run: python3 scripts/retry_publish.py "$RUNNER_TEMP/qualified" --core-tag "$CORE_TAG" --qualified-run-id "$QUALIFIED_RUN_ID"
+  verify-public:
+    needs: publish
+    permissions:
+      contents: write
+    uses: ./.github/workflows/verify-public.yml
+    with:
+      source_sha: ${{ inputs.source_sha }}
+      core_tag: ${{ inputs.core_tag }}

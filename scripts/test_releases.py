@@ -212,14 +212,19 @@ class ReleaseDeliveryTests(unittest.TestCase):
         commit.assert_not_called()
         run.assert_not_called()
 
-    def test_cross_repository_native_reuse_is_rejected_before_api_access(self):
+    def test_cross_repository_native_reuse_is_rejected(self):
         q = {'source_sha': 'a' * 40}
         env = {'SOURCE_SHA': 'a' * 40, 'QUALIFIED_RUN_ID': '42'}
         with patch.dict(releases.os.environ, env), patch.object(control, 'validated', return_value=(q, {})), \
-                patch.object(control, 'api') as api:
-            with self.assertRaisesRegex(ValueError, 'Cross-repository native QA reuse'):
+                patch.object(control, 'api', side_effect=[
+                    {'repository': {'full_name': 'other/repo'}, 'path': '.github/workflows/sync.yml',
+                     'status': 'completed', 'event': 'workflow_dispatch'},
+                    {'jobs': [{'name': 'qualify / Native aerynOS install and release-app QA', 'conclusion': 'success'}]},
+                    {'artifacts': [{'name': 'aerynos-qualified-' + 'a' * 40, 'expired': False}]},
+                ]) as api:
+            with self.assertRaisesRegex(ValueError, 'successful artifact from this channel'):
                 releases.bind_qualified(Path('unused'))
-        api.assert_not_called()
+        self.assertEqual(api.call_count, 3)
 
     def test_binding_checks_published_bytes_version_and_original_producer(self):
         q = {'source_sha': 'a' * 40, 'version': '3.0.29+188', 'build': {

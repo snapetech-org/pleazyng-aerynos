@@ -169,7 +169,11 @@ def publish(directory):
                          'This channel release is separate from the all-platform core application release. See qualification.json and source archive.\n')
         run(['gh', 'release', 'create', tag, '-R', CHANNEL, '--draft', '--prerelease', '--target', 'main',
              '--title', 'aerynOS main ' + q['source_sha'][:12], '--notes-file', str(notes)])
-    release = api(f'repos/{CHANNEL}/releases/tags/{tag}')
+    # GitHub's by-tag REST endpoint does not find a draft whose tag is still
+    # untagged. The CLI resolves the draft; use its stable database ID below.
+    view = json.loads(run(['gh', 'release', 'view', tag, '-R', CHANNEL, '--json', 'databaseId']).stdout)
+    release_id = view['databaseId']
+    release = api(f'repos/{CHANNEL}/releases/{release_id}')
     existing = {a['name']: a for a in release['assets']}
     for name, digest in assets.items():
         if name in existing:
@@ -179,7 +183,7 @@ def publish(directory):
             run(['gh', 'release', 'upload', tag, str(directory / name), '-R', CHANNEL])
         else:
             raise RuntimeError('Published release is missing an immutable asset')
-    release = api(f'repos/{CHANNEL}/releases/tags/{tag}')
+    release = api(f'repos/{CHANNEL}/releases/{release_id}')
     remote = {a['name']: a.get('digest') for a in release['assets']}
     if any(remote.get(name) != 'sha256:' + digest for name, digest in assets.items()):
         raise RuntimeError('GitHub asset digest verification failed')

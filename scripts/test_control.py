@@ -34,6 +34,8 @@ class OwnerHoldTests(unittest.TestCase):
             return {'draft': True, 'assets': [{'name': name, 'digest': 'sha256:' + assets[name]}
                                              for name in state['uploaded']]}
         def upload(arguments):
+            if arguments[:3] == ['gh', 'release', 'view']:
+                return SimpleNamespace(stdout=json.dumps({'databaseId': 12}))
             if arguments[:3] == ['gh', 'release', 'upload']:
                 state['uploaded'].append(Path(arguments[4]).name)
                 state['held'] = True
