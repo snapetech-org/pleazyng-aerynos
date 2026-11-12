@@ -16,6 +16,8 @@ LINUX = 'd' * 64
 APPROVAL = {'independently_verified': 'fixture'}
 TV_RUN, TV_R, TV_W = 44, 'f' * 40, 'e' * 40
 TV_APPROVAL = {'independently_verified': 'earlier TV repair'}
+IOS_RUN, IOS_R, IOS_W = 45, '1' * 40, '2' * 40
+IOS_APPROVAL = {'independently_verified': 'earlier iOS repair'}
 
 
 class PackagingRecoveryTests(unittest.TestCase):
@@ -48,6 +50,7 @@ class PackagingRecoveryTests(unittest.TestCase):
         self.bad_artifact = False
         self.packages = {}
         self.tv_certificate = (TV_W, TV_RUN)
+        self.ios_certificate = (IOS_W, IOS_RUN)
         self.tv_artifact_head = TV_W
 
     def job(self, name, conclusion='success'):
@@ -58,6 +61,9 @@ class PackagingRecoveryTests(unittest.TestCase):
         if path == f'{prefix}/compare/{TV_W}...{W}':
             return {'status': 'ahead', 'base_commit': {'sha': TV_W},
                     'merge_base_commit': {'sha': TV_W}, 'behind_by': 0}
+        if path == f'{prefix}/compare/{IOS_W}...{W}':
+            return {'status': 'ahead', 'base_commit': {'sha': IOS_W},
+                    'merge_base_commit': {'sha': IOS_W}, 'behind_by': 0}
         if path == f'{prefix}/actions/runs/{TV_RUN}':
             return {'id': TV_RUN, 'repository': {'id': recovery.REPOSITORY_ID},
                     'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': TV_W,
@@ -66,6 +72,14 @@ class PackagingRecoveryTests(unittest.TestCase):
                     'status': 'completed', 'conclusion': 'failure', 'run_attempt': 1}
         if path == f'{prefix}/actions/runs/{TV_RUN}/attempts/1/jobs?per_page=100':
             return {'total_count': len(self.tv_jobs), 'jobs': copy.deepcopy(self.tv_jobs)}
+        if path == f'{prefix}/actions/runs/{IOS_RUN}':
+            return {'id': IOS_RUN, 'repository': {'id': recovery.REPOSITORY_ID},
+                    'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': IOS_W,
+                    'head_branch': 'main', 'event': 'workflow_dispatch', 'path': '.github/workflows/build.yml',
+                    'display_title': 'action:release:pool:private:tag:v3.0.31:repair:' + IOS_R,
+                    'status': 'completed', 'conclusion': 'failure', 'run_attempt': 1}
+        if path == f'{prefix}/actions/runs/{IOS_RUN}/attempts/1/jobs?per_page=100':
+            return {'total_count': len(self.ios_jobs), 'jobs': copy.deepcopy(self.ios_jobs)}
         for run_id, source in ((P, S), (A, W)):
             if path == f'{prefix}/actions/runs/{run_id}':
                 return {'id': run_id, 'repository': {'id': recovery.REPOSITORY_ID},
@@ -83,7 +97,8 @@ class PackagingRecoveryTests(unittest.TestCase):
         if '/actions/artifacts/' in path:
             identifier = int(path.rsplit('/', 1)[1])
             item = next(item for item in self.receipt['artifacts'] if item['artifact_id'] == identifier)
-            run, head = (TV_RUN, self.tv_artifact_head) if item['name'] == 'tvos-ipa' else (P, S)
+            run, head = ((TV_RUN, self.tv_artifact_head) if item['name'] == 'tvos-ipa' else
+                         (IOS_RUN, IOS_W) if item['name'] == 'ios-ipa' else (P, S))
             return {'id': identifier, 'name': item['name'], 'digest': item['digest'],
                     'expired': self.bad_artifact, 'workflow_run': {'id': run, 'head_sha': head}}
         raise AssertionError('Unexpected API request: ' + path)
@@ -105,11 +120,15 @@ class PackagingRecoveryTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory, patch.object(control, 'run', side_effect=download), \
                 patch.object(control, 'api', side_effect=self.api), \
-                patch.object(recovery, 'verify_frozen_packaging_repair', return_value=TV_APPROVAL), \
+                patch.object(recovery, 'verify_frozen_packaging_repair',
+                             side_effect=lambda product, packaging, workflow, api:
+                             TV_APPROVAL if packaging == TV_R else IOS_APPROVAL), \
                 patch.object(recovery, 'verify_receipt', return_value=APPROVAL, side_effect=graph_error) as graph:
             result = recovery.verify(release, directory, checksums,
                 product_source=S, compiler_source=compiler, workflow_source=W,
-                producer_run=P, assembly_run=A, linux_sha256=LINUX, verify_file=lambda path: self.tv_certificate)
+                producer_run=P, assembly_run=A, linux_sha256=LINUX,
+                verify_file=lambda path: self.ios_certificate if path.name in recovery.IOS_PACKAGES
+                else self.tv_certificate)
         self.assertEqual(graph.call_args.kwargs['product_source_sha'], S)
         self.assertEqual(graph.call_args.kwargs['workflow_source_sha'], W)
         self.assertEqual(graph.call_args.kwargs['source_run_id'], P)
@@ -215,6 +234,49 @@ class PackagingRecoveryTests(unittest.TestCase):
         self.tv_artifact_head = TV_W
         self.tv_jobs[1]['steps'][-1]['conclusion'] = 'skipped'
         with self.assertRaisesRegex(ValueError, 'Upload tvOS package'):
+            self.verify()
+
+    def enable_dual_reuse(self):
+        self.enable_tv_reuse()
+        self.packages.update({name: ('original qualified ' + name).encode() for name in recovery.IOS_PACKAGES})
+        self.receipt.update(rebuild_ios=False, rebuilt_jobs=[], reused_jobs=sorted(recovery.REUSED | recovery.APPLE))
+        self.assembly_jobs = [item for item in self.assembly_jobs if item['name'] != recovery.IOS_JOB]
+        self.receipt['ios_source'] = {
+            'source_run_id': IOS_RUN, 'source_sha': IOS_R, 'workflow_source_sha': IOS_W,
+            'product_source_sha': S, 'original_source_run_id': P, 'job_id': 701, 'run_attempt': 1,
+            'packaging_approval': IOS_APPROVAL, 'artifact_id': 778, 'artifact_digest': 'sha256:' + 'f' * 64,
+            'platforms_complete': True,
+            'package_sha256': {name: hashlib.sha256(self.packages[name]).hexdigest()
+                               for name in recovery.IOS_PACKAGES},
+        }
+        self.receipt['artifacts'].append({'name': 'ios-ipa', 'artifact_id': 778,
+                                          'digest': 'sha256:' + 'f' * 64,
+                                          'source_run_id': IOS_RUN, 'source_sha': IOS_R})
+        self.ios_jobs = [
+            {**self.job('Validate release request'),
+             'steps': [self.job('Check out the approved packaging source')]},
+            {**self.job(recovery.IOS_JOB), 'id': 701,
+             'steps': [self.job(name) for name in (
+                 'Build iOS (no codesign)', 'Create unsigned developer IPA',
+                 'Attest unsigned developer IPA', 'Build signed iOS App Store IPA',
+                 'Attest signed iOS App Store IPA', 'Upload IPA')]},
+            {**self.job(recovery.TV_JOB, 'skipped'), 'steps': []},
+            {**self.job('create-release', 'failure'),
+             'steps': [self.job('Recover verified platform artifacts', 'failure'),
+                       self.job('Create Release', 'skipped')]},
+        ]
+
+    def test_dual_signed_siblings_allow_assembly_only_with_exact_certificates(self):
+        self.enable_dual_reuse()
+        result = self.verify()
+        self.assertEqual(result['ios_source']['source_run_id'], IOS_RUN)
+        self.assertEqual(result['tvos_source']['source_run_id'], TV_RUN)
+        self.ios_certificate = (W, A)
+        with self.assertRaisesRegex(ValueError, 'iOS package certificate'):
+            self.verify()
+        self.ios_certificate = (IOS_W, IOS_RUN)
+        self.ios_jobs[-1]['steps'][-1]['conclusion'] = 'success'
+        with self.assertRaisesRegex(ValueError, 'attempted publication'):
             self.verify()
 
 
