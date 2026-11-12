@@ -107,6 +107,12 @@
     "release": 5,
     "channel_tag": "main-240994590dd3-r5",
     "channel_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/untagged-0d9415a12a8b784b0c84",
-    "published_at": "2026-11-12T02:58:05.198401+00:00"
+    "published_at": "2026-11-12T02:58:05.198401+00:00",
+    "public_verification": {
+      "status": "failed",
+      "run_url": "https://github.com/snapetech-org/pleazyng-aerynos/actions/runs/43144657448",
+      "failed_at": "2026-11-12T03:03:27.006210+00:00",
+      "retry_after": "2026-11-12T03:33:27.006224+00:00"
+    }
   }
 }
