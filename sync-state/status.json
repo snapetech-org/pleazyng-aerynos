@@ -13,6 +13,8 @@
   "build": true,
   "verify_public": true,
   "release": 5,
-  "phase": "building",
-  "observed_at": "2026-11-12T02:36:58.523213+00:00"
+  "phase": "failed",
+  "observed_at": "2026-11-12T02:36:58.523213+00:00",
+  "failed_at": "2026-11-12T02:51:38.668853+00:00",
+  "retry_after": "2026-11-12T03:21:38.668869+00:00"
 }
