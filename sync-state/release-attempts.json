@@ -1,0 +1,9 @@
+{
+  "v3.0.33": {
+    "phase": "failed",
+    "release_id": 442387942,
+    "failed_at": "2026-11-12T01:43:01.747045+00:00",
+    "reason": "Only approved failed Apple platform rebuilding is supported",
+    "retry_after": "2026-11-12T02:13:01.747065+00:00"
+  }
+}
