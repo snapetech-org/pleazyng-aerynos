@@ -83,7 +83,7 @@ def verify(args):
         app.launch()
         app.wait('Connect to Jellyfin')
         guest.screenshot(output / 'public-installed-launch.png')
-        runtime = command(guest, 'journalctl --user -b -u pleazyng-qa --no-pager', output / 'runtime.log').decode()
+        runtime = command(guest, 'journalctl _COMM=pleazyng --no-pager', output / 'runtime.log').decode()
         expected = 'Pleazyng v' + receipt['version'] + ' (' + args.source_sha[:7] + ')'
         if expected not in runtime:
             raise RuntimeError('Installed app did not identify the qualified source/version')
@@ -98,7 +98,7 @@ def verify(args):
         try:
             if guest.process and guest.process.poll() is None:
                 guest.screenshot(output / 'final.png')
-                command(guest, 'journalctl --user -b -u pleazyng-qa --no-pager', output / 'runtime.log')
+                command(guest, 'journalctl _COMM=pleazyng --no-pager', output / 'runtime.log')
         finally:
             guest.close()
 

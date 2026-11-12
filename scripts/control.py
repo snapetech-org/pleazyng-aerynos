@@ -198,6 +198,9 @@ def publish(directory):
         return
     if release['draft']:
         run(['gh', 'release', 'edit', tag, '-R', CHANNEL, '--draft=false'])
+        release = api(f'repos/{CHANNEL}/releases/{release_id}')
+        if release['draft'] or release['html_url'] != f'https://github.com/{CHANNEL}/releases/tag/{tag}':
+            raise RuntimeError('Qualified release did not become publicly visible')
     # Only now touch the live pointer. No release asset is deleted or replaced.
     feed = Path('feed')
     feed.mkdir(exist_ok=True)
