@@ -1,39 +1,79 @@
 {
-  "application_version": "3.0.22+181",
-  "package_version": "3.0.22-1",
-  "channel_tag": "snapshot-3.0.22-181-r1",
-  "source_commit": "a13b139cd75b8521deedb8dc8ee00928754aac11",
-  "source_archive": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/pleazyng-source-a13b139cd.tar.gz",
-  "application_archive_sha256": "080839adeb75f2c6f03c35362ccb84f1de5bc2df67920e23438716714edfe87d",
-  "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
-  "os": "aerynOS 2026.11, kernel 7.2.14-71.stable",
-  "environment": "QEMU/KVM; 2 vCPU, 8 GiB, virtio, Mesa llvmpipe; UEFI/systemd-boot",
-  "checks": {
-    "boulder_build": "pass",
-    "moss_install_and_upgrade": "pass",
-    "installed_elf": {
-      "count": 402,
-      "missing": 0,
-      "errors": 0
-    },
-    "jellyfin_persisted_connection": "pass",
-    "h264_visible_video_audio_pause_seek_fullscreen": "pass",
-    "explicit_dv_off_preserved": "pass",
-    "absent_dv_preference_defaults_on": "pass",
-    "compatibility_fallback_defaults_on": "pass",
-    "profile7_bl_el_local_visible_pattern": "pass: opengl-next, splitter and el_pair active",
-    "renderer_startup_rejected": "pass: injected unsupported error, legacy opengl and visible pattern",
-    "coredumps": 0
+  "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+  "version": "3.0.33+192",
+  "release": 5,
+  "tag": "main-240994590dd3-r5",
+  "iso_sha256": "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419",
+  "status": "qualified",
+  "recipe_tooling_sha": "70fea9e3a33a313f890c92ee275160f5ded892b3",
+  "evidence_archive": "qa-evidence.tar.gz",
+  "evidence_sha256": "fb9db39bd5c92a8c2c65774e30417fd22ea10612fb079dead055b7dc3fbac687",
+  "audio_capture": {
+    "pcm_sha256": "22066a7b0ccb36d6c9924126f7e2c2346236d804958d91ec82616c7f22340636",
+    "note": "Playable copy fills RIFF/data lengths from file size; original capture and PCM payload remain unchanged"
   },
-  "not_qualified": [
-    "Physical GPU decoding",
-    "Physical HDR/Dolby Vision output",
-    "FEL reference picture accuracy",
-    "Plex/Emby accounts",
-    "NPU inference",
-    "All-platform core release"
+  "checks": [
+    "native_boulder_build",
+    "native_moss_install",
+    "native_moss_upgrade",
+    "installed_elf",
+    "bundled_im_cache",
+    "ordinary_release_launch",
+    "background_return_playing",
+    "background_return_paused",
+    "route_resume",
+    "bookmark_resume",
+    "audio_clock",
+    "jellyfin_sign_in",
+    "dv_default_on",
+    "fallback_default_on",
+    "visible_h264",
+    "pause",
+    "seek",
+    "fullscreen",
+    "open_media_direct_h264"
   ],
-  "release_class": "Independent preview source snapshot; no GitHub artifact attestation; not immutable v3.0.7 or a complete core release",
-  "recipe_mirror_note": "Native build used identical application bytes via guest-only HTTP mirror. Published recipe substitutes this immutable public asset URL; no application bytes changed.",
-  "official_distro_acceptance": false
+  "not_qualified": [
+    "physical HDR/Dolby Vision output",
+    "FEL reference picture accuracy",
+    "physical GPU/NPU execution"
+  ],
+  "stone": "pleazyng-3.0.33-5-1-x86_64.stone",
+  "stone_sha256": "51bbde111acc48aeb20fa722de462cbc1c14e43c9282baee194458f38c5e9a74",
+  "build": {
+    "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+    "version": "3.0.33+192",
+    "tooling_sha": "b27fcf5fef1eca312eb6e2c907d50c23db49a354",
+    "assets": {
+      "pleazyng-linux-x64.tar.gz": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
+      "pleazyng-source.tar.gz": "d641a878e20adb49ec8ff34a79ea15fefa210e84109738f57879e1d78bf2e309"
+    },
+    "provenance": {
+      "kind": "attested-core-linux-artifact",
+      "repository": "snapetech-org/pleazyng",
+      "producer_run_id": 42992562384,
+      "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/42992562384",
+      "artifact_id": 13847607266,
+      "artifact_name": "linux-x64",
+      "signer_workflow": "snapetech-org/pleazyng/.github/workflows/build.yml",
+      "verified_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+      "verification_sha256": "4e6cd8894b53c98928f7357826188d83da1e3d1c3fa56b14b46f2accdd11e199"
+    }
+  },
+  "baseline": {
+    "source_sha": null,
+    "legacy_source_sha": "a13b139cd75b8521deedb8dc8ee00928754aac11",
+    "version": "3.0.22+181",
+    "release": 1,
+    "tag": "snapshot-3.0.22-181-r1",
+    "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/snapshot-3.0.22-181-r1",
+    "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index",
+    "stone": "pleazyng-3.0.22-1-1-x86_64.stone",
+    "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
+    "note": "Qualified seed predates canonical main source tracking; exact source archive is attached to the seed release.",
+    "required_candidate_gate_set": "native-lifecycle-v1",
+    "next_candidate_release_checkpoint": "awaiting-owner-final-canonical-target"
+  },
+  "same_app_version_upgrade": false,
+  "source_sha_changed": true
 }

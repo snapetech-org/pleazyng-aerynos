@@ -9,7 +9,7 @@ Tested on aerynOS 2026.11. Review [qualification.json](qualification.json) and t
 [recipe](recipe/stone.yaml) before enabling this preview.
 
 ```sh
-sudo moss repo add pleazyng-aerynos https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index
+sudo moss repo add pleazyng-aerynos https://github.com/snapetech-org/pleazyng-aerynos/raw/refs/heads/main/feed/stone.index
 sudo moss -y pkg add pleazyng
 ```
 

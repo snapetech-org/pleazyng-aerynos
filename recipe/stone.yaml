@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-only
 name        : pleazyng
-version     : "3.0.22"
-release     : 1
+version     : "3.0.33"
+release     : 5
 homepage    : https://github.com/snapetech-org/pleazyng
 upstreams   :
-    - https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/pleazyng-linux-x64.tar.gz:
-        hash: 080839adeb75f2c6f03c35362ccb84f1de5bc2df67920e23438716714edfe87d
+    - https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-240994590dd3-r5/pleazyng-linux-x64.tar.gz:
+        hash: c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a
         stripdirs: 0
         unpackdir: pleazyng
     - https://security.ubuntu.com/ubuntu/pool/main/w/webkit2gtk/libwebkit2gtk-4.1-0_2.52.6-0ubuntu0.24.04.1_amd64.deb:
@@ -33,6 +33,7 @@ builddeps   :
     - binary(tar)
     - binary(zstd)
     - pkgconfig(gdk-pixbuf-2.0)
+    - binary(gtk-query-immodules-3.0)
 rundeps     :
     - binary(bash)
     - binary(bwrap)
@@ -55,6 +56,8 @@ install     : |
         patchelf --set-rpath %(libdir)/pleazyng/lib "$helper"
     done
     python3 %(pkgdir)/rebuild-pixbuf-cache.py "$bundle" \
+        --runtime-prefix %(libdir)/pleazyng
+    python3 %(pkgdir)/rebuild-im-cache.py "$bundle" \
         --runtime-prefix %(libdir)/pleazyng
     python3 %(pkgdir)/relocate-caches.py "$bundle" \
         --runtime-prefix %(libdir)/pleazyng
