@@ -1,10 +1,18 @@
 {
+  "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+  "core_producer_run_id": 42992562384,
+  "core_tag": "v3.0.33",
+  "core_release_id": 442387942,
+  "core_linux_sha256": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
+  "core_release_url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.33",
+  "core_run_id": 43135173268,
+  "core_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
+  "version_tag_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+  "core_packaging_source_sha": "6ebb1f0f559c45fa8a5071744526269394f76308",
+  "core_recovery_sha256": "2e5d8fcf4d24ee5a9164f381c777e147b45a4eed0646e4c64a030fc3c15f0681",
   "build": true,
-  "source_sha": "2ef9f3101bc99354de93637f84bb5c698c3187fc",
-  "release": 2,
-  "phase": "failed",
-  "observed_at": "2026-11-10T03:43:22.200123+00:00",
-  "run_url": "https://github.com/snapetech-org/pleazyng-aerynos/actions/runs/42750905403",
-  "failed_at": "2026-11-10T04:13:54.303279+00:00",
-  "retry_after": "2026-11-10T04:43:54.303295+00:00"
+  "verify_public": true,
+  "release": 4,
+  "phase": "building",
+  "observed_at": "2026-11-12T02:13:54.727106+00:00"
 }
