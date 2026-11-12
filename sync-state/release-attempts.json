@@ -1,9 +1,22 @@
 {
   "v3.0.33": {
+    "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+    "core_producer_run_id": 42992562384,
+    "core_tag": "v3.0.33",
+    "core_release_id": 442387942,
+    "core_linux_sha256": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
+    "core_release_url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.33",
+    "core_run_id": 43135173268,
+    "core_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
+    "version_tag_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+    "core_packaging_source_sha": "6ebb1f0f559c45fa8a5071744526269394f76308",
+    "core_recovery_sha256": "2e5d8fcf4d24ee5a9164f381c777e147b45a4eed0646e4c64a030fc3c15f0681",
+    "build": true,
+    "verify_public": true,
+    "release": 4,
     "phase": "failed",
-    "release_id": 442387942,
-    "failed_at": "2026-11-12T01:43:01.747045+00:00",
-    "reason": "Only approved failed Apple platform rebuilding is supported",
-    "retry_after": "2026-11-12T02:13:01.747065+00:00"
+    "observed_at": "2026-11-12T02:13:54.727106+00:00",
+    "failed_at": "2026-11-12T02:27:49.490359+00:00",
+    "retry_after": "2026-11-12T02:57:49.490373+00:00"
   }
 }
