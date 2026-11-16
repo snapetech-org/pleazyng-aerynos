@@ -12,9 +12,7 @@
   "core_recovery_sha256": "",
   "build": true,
   "verify_public": true,
-  "release": 38,
-  "phase": "failed",
-  "observed_at": "2026-11-16T08:43:17.376658+00:00",
-  "failed_at": "2026-11-16T08:43:48.821934+00:00",
-  "retry_after": "2026-11-16T09:13:48.821948+00:00"
+  "release": 39,
+  "phase": "building",
+  "observed_at": "2026-11-16T15:21:08.761491+00:00"
 }
