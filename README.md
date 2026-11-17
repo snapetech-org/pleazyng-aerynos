@@ -104,8 +104,10 @@ reconciliation instead; published history is never rewritten.
 
 The canonical release controller wakes this consumer after core publication;
 a workflow scheduled every five minutes provides catch-up, subject to GitHub
-scheduling and runner availability. The delivery controller processes releases from
-3.0.29 onward in version order. It verifies the attested release checksums and successful final core workflow,
+scheduling and runner availability. The delivery controller coalesces pending
+releases from 3.0.29 onward to the newest published version. If that newest
+candidate is in failure backoff, it waits rather than qualifying an older
+pending version. It verifies the attested release checksums and successful final core workflow,
 then verifies the published Linux archive and its original compiler attestation,
 and stages those exact public bytes for native QA. Staging uses anonymous release
 downloads rather than a cross-repository Actions artifact token. Original Linux
@@ -125,7 +127,9 @@ check after thirty minutes without compiling or repackaging the app.
 A failed candidate leaves the previous feed available and retries after thirty
 minutes. Resolution failures are recorded too, and a new release remains eligible
 while an older delivery backs off. Once a newer release is qualified, older
-undelivered releases are recorded as superseded; they cannot roll the feed back. Manual delivery can retry immediately after a repair. Completed release
+undelivered releases are recorded as superseded without discarding their earlier
+failure details; they cannot roll the feed back. Manual delivery can retry
+immediately after a repair. Completed release
 receipts prevent duplicate publication; older or divergent sources cannot replace
 newer qualified packages.
 

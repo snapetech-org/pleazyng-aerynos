@@ -1,4 +1,5 @@
 import copy
+import datetime as dt
 import hashlib
 from types import SimpleNamespace
 import json
@@ -22,10 +23,10 @@ class ReleaseDeliveryTests(unittest.TestCase):
             'sourceRepositoryDigest': 'a' * 40,
             'runInvocationURI': f'https://github.com/{control.CANONICAL}/actions/runs/42/attempts/1'}}}}]
 
-    def test_orders_pending_releases_and_ignores_drafts_tools_and_old_releases(self):
+    def test_newest_pending_release_wins_and_ignores_drafts_tools_and_old_releases(self):
         items = [self.release('v3.0.30'), self.release(), self.release('v3.0.7'),
                  self.release('flutter-security-3.47.8'), {**self.release('v3.0.31'), 'draft': True}]
-        self.assertEqual(releases.choose(items, {})['tag_name'], 'v3.0.29')
+        self.assertEqual(releases.choose(items, {})['tag_name'], 'v3.0.30')
         self.assertEqual(releases.choose(items, {'v3.0.29': {}})['tag_name'], 'v3.0.30')
         self.assertIsNone(releases.choose(items[:1], {'v3.0.30': {}}))
 
@@ -87,14 +88,48 @@ class ReleaseDeliveryTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertFalse(any(Path(call[call.index('--dir') + 1]).exists() for call in calls))
 
-    def test_failed_release_backoff_does_not_block_a_new_release(self):
-        attempts = {'v3.0.29': {'phase': 'failed', 'retry_after': '2099-01-01T00:00:00+00:00'}}
-        items = [self.release(), self.release('v3.0.30')]
-        self.assertEqual(releases.choose(items, {}, attempts)['tag_name'], 'v3.0.30')
-        self.assertEqual(releases.choose(items, {}, attempts, retry=True)['tag_name'], 'v3.0.29')
-        self.assertIsNone(releases.choose([self.release()], {}, attempts))
-        attempts['v3.0.29']['phase'] = 'superseded'
-        self.assertIsNone(releases.choose([self.release()], {}, attempts, retry=True))
+    def test_newer_release_wins_but_its_backoff_blocks_older_releases(self):
+        items = [self.release('v3.0.34'), self.release('v3.0.37')]
+        attempt_time = dt.datetime.fromisoformat('2026-11-17T03:00:00+00:00')
+        attempts = {'v3.0.34': {'phase': 'failed', 'retry_after': '2026-11-17T02:54:52+00:00'}}
+        self.assertEqual(releases.choose(items, {}, attempts, time=attempt_time)['tag_name'], 'v3.0.37')
+        attempts['v3.0.37'] = {'phase': 'failed', 'retry_after': '2026-11-17T04:00:00+00:00'}
+        self.assertIsNone(releases.choose(items, {}, attempts, time=attempt_time))
+        self.assertEqual(releases.choose(items, {}, attempts, time=attempt_time, retry=True)['tag_name'], 'v3.0.37')
+        attempts['v3.0.37']['phase'] = 'superseded'
+        self.assertEqual(releases.choose(items, {}, attempts, time=attempt_time, retry=True)['tag_name'], 'v3.0.34')
+
+    def test_reconcile_waits_for_newest_failed_release_instead_of_qualifying_older(self):
+        reads = {'sync-state/promotion-hold.json': {}, 'sync-state/releases.json': {},
+                 'sync-state/release-attempts.json': {
+                     'v3.0.34': {'phase': 'failed', 'retry_after': '2026-11-17T02:54:52+00:00'},
+                     'v3.0.37': {'phase': 'failed', 'retry_after': '2026-11-17T04:00:00+00:00'},
+                 }}
+        pages = [[self.release('v3.0.34'), self.release('v3.0.37')]]
+        with patch.dict(releases.os.environ, {'MANUAL_RETRY': 'false'}), \
+                patch.object(releases, 'mirror_main', return_value='b' * 40), patch.object(control, 'refresh'), \
+                patch.object(control, 'now', return_value=dt.datetime.fromisoformat('2026-11-17T03:00:00+00:00')), \
+                patch.object(control, 'read', side_effect=lambda path, default=None: reads[path]), \
+                patch.object(control, 'run', return_value=SimpleNamespace(stdout=json.dumps(pages))), \
+                patch.object(releases, 'resolve') as resolve, patch.object(releases, 'emit') as emit:
+            releases.reconcile()
+        resolve.assert_not_called()
+        emit.assert_called_once_with({'build': False, 'reason': 'failure-backoff'})
+
+    def test_superseding_release_keeps_prior_failure_details(self):
+        attempts = {'v3.0.29': {'phase': 'failed', 'release_id': 11,
+                                'failed_at': '2026-11-10T00:00:00+00:00',
+                                'retry_after': '2026-11-10T00:30:00+00:00',
+                                'reason': 'fixture resolution failed'}}
+        release = self.release()
+        with patch.object(releases.control, 'now', return_value=dt.datetime.fromisoformat('2026-11-10T01:00:00+00:00')):
+            releases.mark_superseded(attempts, release, {
+                'version': '3.0.30+190', 'core_release': {'tag': 'v3.0.30'}})
+        self.assertEqual(attempts['v3.0.29']['phase'], 'superseded')
+        self.assertEqual(attempts['v3.0.29']['reason'], 'fixture resolution failed')
+        self.assertEqual(attempts['v3.0.29']['retry_after'], '2026-11-10T00:30:00+00:00')
+        self.assertEqual(attempts['v3.0.29']['superseded_by_version'], '3.0.30+190')
+        self.assertEqual(attempts['v3.0.29']['superseded_by_core_tag'], 'v3.0.30')
 
     def test_repaired_assembler_keeps_original_linux_certificate_identity(self):
         payload = b'original frozen Linux bytes'

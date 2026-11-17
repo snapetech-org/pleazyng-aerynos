@@ -26,13 +26,31 @@ def version(tag):
 def choose(releases, receipts, attempts=None, time=None, retry=False):
     attempts = attempts or {}
     time = time or control.now()
-    eligible = [r for r in releases if not r.get('draft') and r.get('published_at')
-                and version(r.get('tag_name', '')) is not None
-                and version(r['tag_name']) >= MINIMUM and r['tag_name'] not in receipts
-                and attempts.get(r['tag_name'], {}).get('phase') != 'superseded'
-                and (retry or not attempts.get(r['tag_name'], {}).get('retry_after')
-                     or time >= dt.datetime.fromisoformat(attempts[r['tag_name']]['retry_after']))]
-    return min(eligible, key=lambda r: version(r['tag_name'])) if eligible else None
+    pending = [r for r in releases if not r.get('draft') and r.get('published_at')
+               and version(r.get('tag_name', '')) is not None
+               and version(r['tag_name']) >= MINIMUM and r['tag_name'] not in receipts
+               and attempts.get(r['tag_name'], {}).get('phase') != 'superseded']
+    if not pending:
+        return None
+    release = max(pending, key=lambda r: version(r['tag_name']))
+    attempt = attempts.get(release['tag_name'], {})
+    after = attempt.get('retry_after')
+    if not retry and after and time < dt.datetime.fromisoformat(after):
+        return None
+    return release
+
+
+def mark_superseded(attempts, release, good):
+    tag = release['tag_name']
+    attempts[tag] = {
+        **attempts.get(tag, {}),
+        'phase': 'superseded',
+        'release_id': release['id'],
+        'superseded_at': control.now().isoformat(),
+        'superseded_by_version': good.get('version'),
+        'superseded_by_core_tag': (good.get('core_release') or {}).get('tag'),
+        'superseded_reason': 'A newer qualified release is already on the live feed',
+    }
 
 
 def linux_asset(release):
@@ -201,9 +219,7 @@ def reconcile():
         return
     good = control.read('sync-state/last-good.json', {})
     if version('v' + good.get('version', '0.0.0').split('+')[0]) > version(release['tag_name']):
-        attempts[release['tag_name']] = {'phase': 'superseded', 'release_id': release['id'],
-                                        'reason': 'A newer qualified release is already on the live feed',
-                                        'observed_at': control.now().isoformat()}
+        mark_superseded(attempts, release, good)
         control.write('sync-state/release-attempts.json', attempts)
         control.commit(['sync-state/release-attempts.json'], 'Retain disposition for older core release ' + release['tag_name'])
         emit({'build': False, 'reason': 'newer-release-published'})
