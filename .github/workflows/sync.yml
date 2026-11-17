@@ -60,12 +60,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: snapetech-org/pleazyng
-          ref: ${{ needs.plan.outputs.source_sha }}
-          path: source
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: snapetech-org/pleazyng
           ref: main
           path: tooling
           persist-credentials: false
@@ -78,7 +72,7 @@ jobs:
           CORE_LINUX_SHA256: ${{ needs.plan.outputs.core_linux_sha256 }}
           PRODUCER_RUN_ID: ${{ needs.plan.outputs.core_producer_run_id }}
         run: |
-          python3 scripts/stage_release.py --source source --tooling tooling \
+          python3 scripts/stage_release.py --tooling tooling \
             --tag "$CORE_TAG" --sha256 "$CORE_LINUX_SHA256" \
             --source-sha "$SOURCE_SHA" --producer-run-id "$PRODUCER_RUN_ID" \
             --output "$RUNNER_TEMP/candidate"
