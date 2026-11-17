@@ -38,5 +38,12 @@
     "observed_at": "2026-11-17T02:23:59.402442+00:00",
     "failed_at": "2026-11-17T02:24:52.578972+00:00",
     "retry_after": "2026-11-17T02:54:52.578986+00:00"
+  },
+  "v3.0.36": {
+    "phase": "failed",
+    "release_id": 447212367,
+    "failed_at": "2026-11-17T10:57:29.153856+00:00",
+    "reason": "Unsupported frozen packaging recovery receipt",
+    "retry_after": "2026-11-17T11:27:29.153882+00:00"
   }
 }
