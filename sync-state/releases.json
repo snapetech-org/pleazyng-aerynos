@@ -179,5 +179,22 @@
       "verified_at": "2026-11-21T06:08:50.264165+00:00",
       "report_sha256": "2378ae142b6f3df92586da6a6de637c31a4f5c6913124a40956ee9f879691e49"
     }
+  },
+  "v3.0.45": {
+    "tag": "v3.0.45",
+    "release_id": 453651522,
+    "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.45",
+    "linux_sha256": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
+    "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+    "linux_producer_run_id": 44878095638,
+    "assembler_run_id": 44878095638,
+    "assembler_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+    "version_tag_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+    "qualification_run_id": 44900811508,
+    "version": "3.0.45+204",
+    "release": 57,
+    "channel_tag": "main-3f135d18dc5e-r57",
+    "channel_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-3f135d18dc5e-r57",
+    "published_at": "2026-11-21T12:04:57.173031+00:00"
   }
 }
