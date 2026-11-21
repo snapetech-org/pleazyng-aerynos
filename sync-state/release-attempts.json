@@ -47,10 +47,23 @@
     "retry_after": "2026-11-21T02:58:34.635959+00:00"
   },
   "v3.0.44": {
+    "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+    "core_producer_run_id": 44809271478,
+    "core_tag": "v3.0.44",
+    "core_release_id": 453390773,
+    "core_linux_sha256": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
+    "core_release_url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.44",
+    "core_run_id": 44856843236,
+    "core_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+    "version_tag_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+    "core_packaging_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+    "core_recovery_sha256": "0d9dc34a9c8d1f643d9ffa04efd4593a903b3bbb065ec2d673d9872fb18507e8",
+    "build": true,
+    "verify_public": true,
+    "release": 42,
     "phase": "failed",
-    "release_id": 453390773,
-    "failed_at": "2026-11-21T02:44:37.037903+00:00",
-    "reason": "Unsupported frozen packaging recovery receipt",
-    "retry_after": "2026-11-21T03:14:37.037926+00:00"
+    "observed_at": "2026-11-21T03:19:32.214558+00:00",
+    "failed_at": "2026-11-21T03:20:07.550971+00:00",
+    "retry_after": "2026-11-21T03:50:07.550985+00:00"
   }
 }
