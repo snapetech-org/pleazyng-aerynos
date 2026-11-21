@@ -60,10 +60,10 @@
     "core_recovery_sha256": "0d9dc34a9c8d1f643d9ffa04efd4593a903b3bbb065ec2d673d9872fb18507e8",
     "build": true,
     "verify_public": true,
-    "release": 43,
+    "release": 44,
     "phase": "failed",
-    "observed_at": "2026-11-21T03:33:03.728099+00:00",
-    "failed_at": "2026-11-21T03:52:55.461849+00:00",
-    "retry_after": "2026-11-21T04:22:55.461863+00:00"
+    "observed_at": "2026-11-21T04:13:57.037777+00:00",
+    "failed_at": "2026-11-21T04:27:27.832963+00:00",
+    "retry_after": "2026-11-21T04:57:27.832981+00:00"
   }
 }
