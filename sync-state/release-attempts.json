@@ -34,10 +34,15 @@
     "build": true,
     "verify_public": true,
     "release": 41,
-    "phase": "failed",
+    "phase": "superseded",
     "observed_at": "2026-11-17T02:23:59.402442+00:00",
     "failed_at": "2026-11-17T02:24:52.578972+00:00",
-    "retry_after": "2026-11-17T02:54:52.578986+00:00"
+    "retry_after": "2026-11-17T02:54:52.578986+00:00",
+    "release_id": 445934504,
+    "superseded_at": "2026-11-21T22:21:01.826092+00:00",
+    "superseded_by_version": "3.0.45+204",
+    "superseded_by_core_tag": "v3.0.45",
+    "superseded_reason": "A newer qualified release is already on the live feed"
   },
   "v3.0.36": {
     "phase": "superseded",
