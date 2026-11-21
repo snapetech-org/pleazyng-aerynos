@@ -89,7 +89,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: snapetech-org/pleazyng/.github/workflows/aerynos-qualify.yml@6579ae8ce8447b84dad4dc9539eebe5094f61746
+    uses: snapetech-org/pleazyng/.github/workflows/aerynos-qualify.yml@9a0373938a5ca0f32a274c4cc94305b7af1a969d
     with:
       source_sha: ${{ needs.plan.outputs.source_sha }}
       release: ${{ fromJSON(needs.plan.outputs.release || '2') }}
