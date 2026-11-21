@@ -23,6 +23,42 @@ class PublicInstallTests(unittest.TestCase):
             with self.subTest(output=output), self.assertRaises(RuntimeError):
                 public_install.installed_version(output, self.receipt())
 
+    def test_public_launch_chooses_start_fresh_before_waiting_for_sign_in(self):
+        class App:
+            def __init__(self):
+                self.actions = []
+
+            def ui(self, action='dump', name=''):
+                self.actions.append((action, name))
+                if action == 'dump':
+                    return [{'name': 'Import an existing media library?'},
+                            {'name': 'Start fresh'}, {'name': 'Choose a database'}]
+
+            def wait(self, name):
+                self.actions.append(('wait', name))
+
+        app = App()
+        choose = lambda controls: 'Start fresh' if 'Start fresh' in controls else None
+        public_install.connect_to_jellyfin(app, choose)
+        self.assertEqual(app.actions, [('dump', ''), ('click', 'Start fresh'), ('wait', 'Connect to Jellyfin')])
+
+    def test_existing_public_setup_waits_without_starting_fresh(self):
+        class App:
+            def __init__(self):
+                self.actions = []
+
+            def ui(self, action='dump', name=''):
+                self.actions.append((action, name))
+                return [{'name': 'Connect to Jellyfin'}]
+
+            def wait(self, name):
+                self.actions.append(('wait', name))
+
+        app = App()
+        choose = lambda controls: 'Start fresh' if 'Start fresh' in controls else None
+        public_install.connect_to_jellyfin(app, choose)
+        self.assertEqual(app.actions, [('dump', ''), ('wait', 'Connect to Jellyfin')])
+
 
 if __name__ == '__main__':
     unittest.main()

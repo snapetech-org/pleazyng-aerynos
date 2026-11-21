@@ -43,6 +43,14 @@ def installed_version(output, receipt):
         raise RuntimeError('Public Moss installation did not activate ' + expected)
 
 
+def connect_to_jellyfin(app, initial_setup_action):
+    controls = {(node['name'] or '').split('\n', 1)[0] for node in app.ui()}
+    action = initial_setup_action(controls)
+    if action:
+        app.ui('click', action)
+    app.wait('Connect to Jellyfin')
+
+
 def verify(args):
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -65,7 +73,7 @@ def verify(args):
         (output / name).write_bytes(content)
     sys.path.insert(0, str(args.tooling.resolve() / 'scripts/aerynos'))
     from vm import Guest
-    from qualify import AppQA, command
+    from qualify import AppQA, command, initial_setup_action
     guest = Guest(args.scratch / 'vm')
     app = None
     try:
@@ -81,7 +89,7 @@ def verify(args):
         app = AppQA(guest, output)
         app.login_desktop()
         app.launch()
-        app.wait('Connect to Jellyfin')
+        connect_to_jellyfin(app, initial_setup_action)
         guest.screenshot(output / 'public-installed-launch.png')
         runtime = command(guest, 'journalctl _COMM=pleazyng --no-pager', output / 'runtime.log').decode()
         expected = 'Pleazyng v' + receipt['version'] + ' (' + args.source_sha[:7] + ')'
