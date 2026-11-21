@@ -69,5 +69,13 @@
     "observed_at": "2026-11-21T05:12:25.001762+00:00",
     "failed_at": "2026-11-21T05:24:53.634357+00:00",
     "retry_after": "2026-11-21T05:54:53.634372+00:00"
+  },
+  "v3.0.35": {
+    "phase": "superseded",
+    "release_id": 446616800,
+    "superseded_at": "2026-11-21T17:27:10.195492+00:00",
+    "superseded_by_version": "3.0.45+204",
+    "superseded_by_core_tag": "v3.0.45",
+    "superseded_reason": "A newer qualified release is already on the live feed"
   }
 }
