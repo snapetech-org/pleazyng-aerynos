@@ -151,6 +151,17 @@ These checks run again before promotion. A receipt claiming equivalence alone
 is rejected. `core-release.json` records the separate product, packaging and
 workflow sources, compiler/assembler run IDs and recovery proof digest.
 
+A macOS packaging checkpoint recovery has a separate `macos-packaging`
+platform-provenance profile; it is not the frozen Apple source-repair receipt.
+The consumer binds that metadata through the final assembler's attested
+checksum list, verifies the original source run's required CI, freeze, and
+reused jobs, and requires
+the original Linux artifact to retain its exact tag source and producer. It
+also verifies that macOS was the only recovered platform and that its canonical
+recovery job and final assembly succeeded. Unknown or incomplete profiles still
+fail closed. The aerynOS package continues to use the original attested Linux
+artifact without recompiling or replacing it.
+
 A completed tvOS output may be reused while repairing iOS. Its producer must
 have passed signed build, attestation and upload steps for a separately approved
 repair of the same frozen product. The consumer verifies that producer's Git

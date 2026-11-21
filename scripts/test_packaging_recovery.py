@@ -280,5 +280,129 @@ class PackagingRecoveryTests(unittest.TestCase):
             self.verify()
 
 
+class MacosPackagingProvenanceTests(unittest.TestCase):
+    product, mac_workflow, assembler = 'a' * 40, 'b' * 40, 'c' * 40
+    producer, mac_run, assembly = 42, 44, 43
+
+    def setUp(self):
+        self.receipt = {
+            'profile': 'macos-packaging', 'source_run_id': self.producer,
+            'source_sha': self.product, 'head_sha': self.assembler, 'version': '3.0.44',
+            'reused_jobs': ['Validate release request', 'Build Linux (x64)'],
+            'recovered_jobs': ['build-macos'], 'platforms_complete': True,
+            'pending_jobs': [], 'excluded_optional_jobs': [],
+            'ci_mode': 'embedded', 'ci_source_sha': self.product, 'ci_run_id': self.producer,
+            'embedded_ci': {'mode': 'embedded', 'source_sha': self.product,
+                'run_id': self.producer, 'workflow': '.github/workflows/build.yml',
+                'ci_workflow': '.github/workflows/ci.yml'},
+            'artifacts': [{'name': 'linux-x64', 'source_sha': self.product,
+                           'source_run_id': self.producer}],
+            'macos_source': {'source_run_id': self.mac_run, 'source_sha': self.mac_workflow,
+                'job_id': 4401, 'compilation_reused': False},
+        }
+        self.original_jobs = [
+            {'name': 'Release CI / Code Analysis', 'status': 'completed', 'conclusion': 'success'},
+            {'name': 'Freeze qualified source', 'status': 'completed', 'conclusion': 'success'},
+            {'name': 'Validate release request', 'status': 'completed', 'conclusion': 'success'},
+            {'name': 'Build Linux (x64)', 'status': 'completed', 'conclusion': 'success'},
+        ]
+        self.macos_jobs = [{'name': 'build-macos', 'id': 4401,
+                            'status': 'completed', 'conclusion': 'success'}]
+
+    @staticmethod
+    def job_result(name, *, identifier=None):
+        result = {'name': name, 'status': 'completed', 'conclusion': 'success'}
+        if identifier is not None:
+            result['id'] = identifier
+        return result
+
+    def api(self, path):
+        prefix = 'repos/' + control.CANONICAL
+        if path == f'{prefix}/compare/{self.product}...{self.mac_workflow}':
+            target = self.mac_workflow
+        elif path == f'{prefix}/compare/{self.mac_workflow}...{self.assembler}':
+            target = self.assembler
+        else:
+            target = None
+        if target:
+            base = self.product if target == self.mac_workflow else self.mac_workflow
+            return {'status': 'ahead', 'base_commit': {'sha': base},
+                    'merge_base_commit': {'sha': base}, 'behind_by': 0}
+        run_by_id = {
+            self.producer: (self.product, 'failure'),
+            self.mac_run: (self.mac_workflow, 'success'),
+            self.assembly: (self.assembler, 'success'),
+        }
+        for run_id, (source, conclusion) in run_by_id.items():
+            if path == f'{prefix}/actions/runs/{run_id}':
+                return {'id': run_id, 'repository': {'id': recovery.REPOSITORY_ID},
+                    'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': source,
+                    'head_branch': 'main', 'path': '.github/workflows/build.yml',
+                    'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': conclusion,
+                    'run_attempt': 1}
+            if path == f'{prefix}/actions/runs/{run_id}/attempts/1/jobs?per_page=100':
+                items = self.original_jobs if run_id == self.producer else self.macos_jobs
+                return {'total_count': len(items), 'jobs': copy.deepcopy(items)}
+        raise AssertionError('Unexpected API request: ' + path)
+
+    def test_accepts_attested_complete_macos_only_recovery(self):
+        with patch.object(control, 'api', side_effect=self.api), \
+                patch.object(recovery, 'manifest', return_value=['Code Analysis']):
+            proof = recovery.verify_macos_packaging_provenance(self.receipt,
+                release={'tag_name': 'v3.0.44'}, product_source=self.product,
+                workflow_source=self.assembler, producer_run=self.producer,
+                assembly_run=self.assembly)
+        self.assertEqual(proof['recovery_policy'], 'macos-packaging-provenance-v1')
+        self.assertEqual(proof['packaging_source_sha'], self.assembler)
+
+    def test_public_release_verification_binds_provenance_digest_and_attestation(self):
+        payload = json.dumps(self.receipt).encode()
+        digest = hashlib.sha256(payload).hexdigest()
+        release = {'tag_name': 'v3.0.44', 'assets': [{'name': recovery.RECEIPT,
+                    'digest': 'sha256:' + digest}]}
+        checksums = digest + '  ' + recovery.RECEIPT + '\n'
+
+        def download(arguments):
+            target = Path(arguments[arguments.index('--dir') + 1]) / recovery.RECEIPT
+            target.write_bytes(payload)
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(control, 'run', side_effect=download), \
+                patch.object(control, 'api', side_effect=self.api), \
+                patch.object(recovery, 'manifest', return_value=['Code Analysis']):
+            proof = recovery.verify(release, directory, checksums,
+                product_source=self.product, compiler_source=self.product,
+                workflow_source=self.assembler, producer_run=self.producer,
+                assembly_run=self.assembly, linux_sha256='d' * 64)
+        self.assertEqual(proof['receipt_sha256'], digest)
+        self.assertEqual(proof['recovery_policy'], 'macos-packaging-provenance-v1')
+
+    def test_rejects_wrong_profile_identity_or_incomplete_platform_set(self):
+        for change in ({'profile': 'unknown'}, {'source_sha': 'f' * 40},
+                       {'source_run_id': 99}, {'recovered_jobs': ['build-ios']},
+                       {'platforms_complete': False}, {'pending_jobs': ['build-tvos']},
+                       {'excluded_optional_jobs': ['optional-job']},
+                       {'reused_jobs': ['Build Linux (arm64)']},
+                       {'artifacts': [{'name': 'linux-x64', 'source_sha': 'f' * 40,
+                                       'source_run_id': self.producer}]}):
+            with self.subTest(change=change), patch.object(control, 'api', side_effect=self.api), \
+                    patch.object(recovery, 'manifest', return_value=['Code Analysis']), \
+                    self.assertRaises(ValueError):
+                recovery.verify_macos_packaging_provenance({**self.receipt, **change},
+                    release={'tag_name': 'v3.0.44'}, product_source=self.product,
+                    workflow_source=self.assembler, producer_run=self.producer,
+                    assembly_run=self.assembly)
+
+    def test_rejects_failed_or_mismatched_recovered_macos_job(self):
+        self.macos_jobs[0]['conclusion'] = 'failure'
+        with patch.object(control, 'api', side_effect=self.api), \
+                patch.object(recovery, 'manifest', return_value=['Code Analysis']), \
+                self.assertRaisesRegex(ValueError, 'build-macos'):
+            recovery.verify_macos_packaging_provenance(self.receipt,
+                release={'tag_name': 'v3.0.44'}, product_source=self.product,
+                workflow_source=self.assembler, producer_run=self.producer,
+                assembly_run=self.assembly)
+
+
 if __name__ == '__main__':
     unittest.main()

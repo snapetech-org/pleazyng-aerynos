@@ -244,6 +244,82 @@ def verify_ios(receipt, release, directory, checksums, product, original_run, wo
     return source
 
 
+def verify_macos_packaging_provenance(receipt, *, release, product_source, workflow_source,
+                                     producer_run, assembly_run):
+    """Verify a complete release assembled after a macOS-only packaging recovery.
+
+    The downstream package consumes the original Linux compiler artifact. This
+    proof keeps that source/run identity exact while independently checking that
+    the recovered macOS job and the final assembly completed on canonical main.
+    """
+    require(receipt.get('profile') == 'macos-packaging'
+            and receipt.get('source_sha') == product_source
+            and receipt.get('source_run_id') == producer_run
+            and receipt.get('head_sha') == workflow_source
+            and receipt.get('version') == release['tag_name'].removeprefix('v'),
+            'Platform provenance does not bind the frozen release identity')
+    require(receipt.get('platforms_complete') is True and receipt.get('pending_jobs') == []
+            and receipt.get('excluded_optional_jobs') == []
+            and receipt.get('recovered_jobs') == ['build-macos'],
+            'Platform provenance is not a complete macOS-only recovery')
+    reused = receipt.get('reused_jobs')
+    require(isinstance(reused, list) and len(reused) == len(set(reused))
+            and 'Build Linux (x64)' in reused,
+            'Platform provenance does not preserve the original Linux producer')
+    linux_records = [item for item in receipt.get('artifacts', [])
+                     if isinstance(item, dict) and item.get('name') == 'linux-x64']
+    require(len(linux_records) == 1 and linux_records[0].get('source_sha') == product_source
+            and linux_records[0].get('source_run_id') == producer_run,
+            'Platform provenance does not bind the Linux artifact to its original source run')
+    embedded = receipt.get('embedded_ci')
+    require(receipt.get('ci_mode') == 'embedded' and receipt.get('ci_source_sha') == product_source
+            and receipt.get('ci_run_id') == producer_run and isinstance(embedded, dict)
+            and embedded.get('mode') == 'embedded' and embedded.get('source_sha') == product_source
+            and embedded.get('run_id') == producer_run
+            and embedded.get('workflow') == '.github/workflows/build.yml'
+            and embedded.get('ci_workflow') == '.github/workflows/ci.yml',
+            'Platform provenance does not bind the frozen source qualification')
+
+    original = trusted_run(producer_run, product_source)
+    original_jobs = jobs(producer_run, original['run_attempt'])
+    for name in manifest(product_source):
+        successful(original_jobs, 'Release CI / ' + name)
+    successful(original_jobs, 'Freeze qualified source')
+    for name in reused:
+        successful(original_jobs, name)
+
+    macos = receipt.get('macos_source')
+    require(isinstance(macos, dict) and type(macos.get('source_run_id')) is int
+            and macos['source_run_id'] > 0 and macos['source_run_id'] not in (producer_run, assembly_run)
+            and isinstance(macos.get('source_sha'), str)
+            and re.fullmatch('[0-9a-f]{40}', macos['source_sha'])
+            and type(macos.get('job_id')) is int and macos['job_id'] > 0
+            and macos.get('compilation_reused') is False,
+            'Recovered macOS source identity is incomplete')
+    macos_run = trusted_run(macos['source_run_id'], macos['source_sha'], completed_success=True)
+    macos_jobs = jobs(macos['source_run_id'], macos_run['run_attempt'])
+    macos_job = successful(macos_jobs, 'build-macos')
+    require(macos_job.get('id') == macos['job_id'], 'Recovered macOS job identity changed')
+
+    def ancestor(base, head):
+        comparison = control.api(f'repos/{control.CANONICAL}/compare/{base}...{head}')
+        require(comparison.get('status') == 'ahead'
+                and comparison.get('base_commit', {}).get('sha') == base
+                and comparison.get('merge_base_commit', {}).get('sha') == base
+                and comparison.get('behind_by') == 0,
+                'Platform recovery source is outside the frozen release lineage')
+
+    ancestor(product_source, macos['source_sha'])
+    ancestor(macos['source_sha'], workflow_source)
+    assembly = trusted_run(assembly_run, workflow_source, completed_success=True)
+    require(assembly.get('id') == assembly_run, 'Final release assembler identity changed')
+    return {'recovery_policy': 'macos-packaging-provenance-v1',
+            'product_source_sha': product_source, 'packaging_source_sha': workflow_source,
+            'workflow_source_sha': workflow_source, 'source_run_id': producer_run,
+            'assembly_run_id': assembly_run, 'recovered_macos': macos,
+            'approval': {'verified_platform_provenance': True}}
+
+
 def verify(release, directory, checksums, *, product_source, compiler_source, workflow_source,
            producer_run, assembly_run, linux_sha256, verify_file=None):
     """Checksums and Linux certificate identities must already be verified."""
@@ -258,6 +334,13 @@ def verify(release, directory, checksums, *, product_source, compiler_source, wo
     require(hashlib.sha256(path.read_bytes()).hexdigest() == expected, 'Public recovery receipt digest mismatch')
     receipt = json.loads(path.read_text())
     require(isinstance(receipt, dict), 'Public recovery receipt must be an object')
+    if receipt.get('profile') == 'macos-packaging':
+        # The attested SHA256SUMS file was verified by the caller and binds this
+        # asset's digest. This profile is not independently attested as a file.
+        proof = verify_macos_packaging_provenance(receipt, release=release,
+            product_source=product_source, workflow_source=workflow_source,
+            producer_run=producer_run, assembly_run=assembly_run)
+        return {**proof, 'receipt_sha256': expected}
     packaging = receipt.get('packaging_source_sha')
     proof = verify_receipt(receipt, product_source_sha=product_source,
                            packaging_source_sha=packaging, workflow_source_sha=workflow_source,
