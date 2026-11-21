@@ -40,11 +40,15 @@
     "retry_after": "2026-11-17T02:54:52.578986+00:00"
   },
   "v3.0.36": {
-    "phase": "failed",
+    "phase": "superseded",
     "release_id": 447212367,
     "failed_at": "2026-11-21T02:28:34.635938+00:00",
     "reason": "Unsupported frozen packaging recovery receipt",
-    "retry_after": "2026-11-21T02:58:34.635959+00:00"
+    "retry_after": "2026-11-21T02:58:34.635959+00:00",
+    "superseded_at": "2026-11-21T10:07:31.351012+00:00",
+    "superseded_by_version": "3.0.44+203",
+    "superseded_by_core_tag": "v3.0.44",
+    "superseded_reason": "A newer qualified release is already on the live feed"
   },
   "v3.0.44": {
     "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
