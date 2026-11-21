@@ -126,5 +126,40 @@
       "verified_at": "2026-11-12T03:18:51.246717+00:00",
       "report_sha256": "934f1ee9d3447c7f26b58eeb6e39d08a109b9b2f51a28e783336880c206f7e3c"
     }
+  },
+  "v3.0.44": {
+    "tag": "v3.0.44",
+    "release_id": 453390773,
+    "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.44",
+    "linux_sha256": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
+    "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+    "linux_producer_run_id": 44809271478,
+    "assembler_run_id": 44856843236,
+    "assembler_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+    "version_tag_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+    "qualification_run_id": 44871834611,
+    "packaging_recovery": {
+      "recovery_policy": "macos-packaging-provenance-v1",
+      "product_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+      "packaging_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+      "workflow_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+      "source_run_id": 44809271478,
+      "assembly_run_id": 44856843236,
+      "recovered_macos": {
+        "source_run_id": 44843977176,
+        "source_sha": "86446dca04e1e3a395c751c641ac611ad4e07d03",
+        "job_id": 136659369338,
+        "compilation_reused": false
+      },
+      "approval": {
+        "verified_platform_provenance": true
+      },
+      "receipt_sha256": "0d9dc34a9c8d1f643d9ffa04efd4593a903b3bbb065ec2d673d9872fb18507e8"
+    },
+    "version": "3.0.44+203",
+    "release": 47,
+    "channel_tag": "main-3a6628318228-r47",
+    "channel_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-3a6628318228-r47",
+    "published_at": "2026-11-21T05:53:35.196756+00:00"
   }
 }
