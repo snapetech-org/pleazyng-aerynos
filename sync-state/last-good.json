@@ -1,15 +1,15 @@
 {
-  "source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
-  "version": "3.0.49+208",
-  "release": 61,
-  "tag": "main-7ccbe6c73d45-r61",
+  "source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
+  "version": "3.0.50+209",
+  "release": 67,
+  "tag": "main-9ac7a3aecab8-r67",
   "iso_sha256": "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419",
   "status": "qualified",
-  "recipe_tooling_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+  "recipe_tooling_sha": "fb26e307c21c88e3af9ddd6dfc294bb393df84ad",
   "evidence_archive": "qa-evidence.tar.gz",
-  "evidence_sha256": "86622c8575c63109ccb369dde789c9f63bdbf9d33b5655536476fc22431b3ce9",
+  "evidence_sha256": "a491c75b194211c0085c2d984d9adfc3d647c69b0860a06595cc9f22679b610e",
   "audio_capture": {
-    "pcm_sha256": "72c875714b50624bde7ac6a120f666a8f53a8df4d3992c5d962e46c07dcea566",
+    "pcm_sha256": "36b0a12c6c7a6edeb9f20710e17eb4e749598bcac0bb54d4f71f17119e269e79",
     "note": "Playable copy fills RIFF/data lengths from file size; original capture and PCM payload remain unchanged"
   },
   "checks": [
@@ -38,40 +38,40 @@
     "FEL reference picture accuracy",
     "physical GPU/NPU execution"
   ],
-  "stone": "pleazyng-3.0.49-61-1-x86_64.stone",
-  "stone_sha256": "965d8ccbb540b90d9931c736d64bd8046af7f864d7f7efb946da0f828c0673e0",
+  "stone": "pleazyng-3.0.50-67-1-x86_64.stone",
+  "stone_sha256": "826f6d93c2c4c6f65259f9750a16ed7f8d0a49b1e71770289a0665b9fa7e2f79",
   "build": {
-    "source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
-    "version": "3.0.49+208",
-    "tooling_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+    "source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
+    "version": "3.0.50+209",
+    "tooling_sha": "fb26e307c21c88e3af9ddd6dfc294bb393df84ad",
     "assets": {
-      "pleazyng-linux-x64.tar.gz": "1263b68e5718b9c654059e34eb4f13c30fbdb6ad93e8ce1c5c12380133b8ef4d",
-      "pleazyng-source.tar.gz": "98381c6aec190f195c7388049a441e2edb9431c56c5d0cf90e84283dfed24e0c"
+      "pleazyng-linux-x64.tar.gz": "35471df291f1ea6e5ed34daf52a5ce77d607650b05f9e36b240893146a2ee435",
+      "pleazyng-source.tar.gz": "e316f690c34976caf67cbcfc6bc71f49ebb6e6c294ff4990e6d4f17e8dc7ded2"
     },
     "provenance": {
       "kind": "attested-core-linux-artifact",
       "repository": "snapetech-org/pleazyng",
-      "producer_run_id": 44994477099,
-      "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/44994477099",
-      "artifact_id": 14744458562,
+      "producer_run_id": 45104918285,
+      "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/45104918285",
+      "artifact_id": 14790780774,
       "artifact_name": "linux-x64",
       "signer_workflow": "snapetech-org/pleazyng/.github/workflows/build.yml",
-      "verified_source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
-      "verification_sha256": "03e75fbb3e0f3925388b40419213c9ee598e4481ad9be4acd8f01c39d70c234d"
+      "verified_source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
+      "verification_sha256": "e66a96f1cefeb76ba385400fde398949669b8b586bf9f9c272d20ed69913bc5a"
     }
   },
   "baseline": {
-    "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
-    "version": "3.0.45+204",
-    "release": 57,
-    "tag": "main-3f135d18dc5e-r57",
+    "source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+    "version": "3.0.49+208",
+    "release": 61,
+    "tag": "main-7ccbe6c73d45-r61",
     "iso_sha256": "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419",
     "status": "qualified",
-    "recipe_tooling_sha": "db570fcaefa2de4ad2c6069bf7dfe8bbf86fca1c",
+    "recipe_tooling_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
     "evidence_archive": "qa-evidence.tar.gz",
-    "evidence_sha256": "2588e510695f2e941c7254a73deb34adb58930a818761e569ff1f1d4df4c91e4",
+    "evidence_sha256": "86622c8575c63109ccb369dde789c9f63bdbf9d33b5655536476fc22431b3ce9",
     "audio_capture": {
-      "pcm_sha256": "e6ef69cf4b458c01e27fc549265e9ee5ac101de4774d4e6613693313fdb0218a",
+      "pcm_sha256": "72c875714b50624bde7ac6a120f666a8f53a8df4d3992c5d962e46c07dcea566",
       "note": "Playable copy fills RIFF/data lengths from file size; original capture and PCM payload remain unchanged"
     },
     "checks": [
@@ -100,40 +100,40 @@
       "FEL reference picture accuracy",
       "physical GPU/NPU execution"
     ],
-    "stone": "pleazyng-3.0.45-57-1-x86_64.stone",
-    "stone_sha256": "33d8c344d71b25de5564ad29a452385ccdbba9d4defdce9e42f29d11e76af0c8",
+    "stone": "pleazyng-3.0.49-61-1-x86_64.stone",
+    "stone_sha256": "965d8ccbb540b90d9931c736d64bd8046af7f864d7f7efb946da0f828c0673e0",
     "build": {
-      "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
-      "version": "3.0.45+204",
-      "tooling_sha": "db570fcaefa2de4ad2c6069bf7dfe8bbf86fca1c",
+      "source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+      "version": "3.0.49+208",
+      "tooling_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
       "assets": {
-        "pleazyng-linux-x64.tar.gz": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
-        "pleazyng-source.tar.gz": "5d07f09e8978bc90017062955e5a0123a9adc56cb2b2fd4b76f8f7d0da5e493f"
+        "pleazyng-linux-x64.tar.gz": "1263b68e5718b9c654059e34eb4f13c30fbdb6ad93e8ce1c5c12380133b8ef4d",
+        "pleazyng-source.tar.gz": "98381c6aec190f195c7388049a441e2edb9431c56c5d0cf90e84283dfed24e0c"
       },
       "provenance": {
         "kind": "attested-core-linux-artifact",
         "repository": "snapetech-org/pleazyng",
-        "producer_run_id": 44878095638,
-        "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/44878095638",
-        "artifact_id": 14698037701,
+        "producer_run_id": 44994477099,
+        "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/44994477099",
+        "artifact_id": 14744458562,
         "artifact_name": "linux-x64",
         "signer_workflow": "snapetech-org/pleazyng/.github/workflows/build.yml",
-        "verified_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
-        "verification_sha256": "b4edf74ecc417cdfc1b785935eff5f4e62c949e9af82bfa0ce87df70e5940744"
+        "verified_source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+        "verification_sha256": "03e75fbb3e0f3925388b40419213c9ee598e4481ad9be4acd8f01c39d70c234d"
       }
     },
     "baseline": {
-      "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
-      "version": "3.0.44+203",
-      "release": 47,
-      "tag": "main-3a6628318228-r47",
+      "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+      "version": "3.0.45+204",
+      "release": 57,
+      "tag": "main-3f135d18dc5e-r57",
       "iso_sha256": "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419",
       "status": "qualified",
-      "recipe_tooling_sha": "0520b33f3a3a80b44869b5dac7c76ba3ed3bae1d",
+      "recipe_tooling_sha": "db570fcaefa2de4ad2c6069bf7dfe8bbf86fca1c",
       "evidence_archive": "qa-evidence.tar.gz",
-      "evidence_sha256": "87ace10b016e9a6a1f82fbebc305e9689c8b8a33a1838ad569602af2560f4a72",
+      "evidence_sha256": "2588e510695f2e941c7254a73deb34adb58930a818761e569ff1f1d4df4c91e4",
       "audio_capture": {
-        "pcm_sha256": "0d728a2e5c86517552d241dd83cbc0c1bf9a4526914a4e72bd71a0b8a381c7da",
+        "pcm_sha256": "e6ef69cf4b458c01e27fc549265e9ee5ac101de4774d4e6613693313fdb0218a",
         "note": "Playable copy fills RIFF/data lengths from file size; original capture and PCM payload remain unchanged"
       },
       "checks": [
@@ -162,40 +162,40 @@
         "FEL reference picture accuracy",
         "physical GPU/NPU execution"
       ],
-      "stone": "pleazyng-3.0.44-47-1-x86_64.stone",
-      "stone_sha256": "e43e87359cd746bcb163877cda3f2c1ec2f64be15d32ff853162c98c20a4efa7",
+      "stone": "pleazyng-3.0.45-57-1-x86_64.stone",
+      "stone_sha256": "33d8c344d71b25de5564ad29a452385ccdbba9d4defdce9e42f29d11e76af0c8",
       "build": {
-        "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
-        "version": "3.0.44+203",
-        "tooling_sha": "0520b33f3a3a80b44869b5dac7c76ba3ed3bae1d",
+        "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+        "version": "3.0.45+204",
+        "tooling_sha": "db570fcaefa2de4ad2c6069bf7dfe8bbf86fca1c",
         "assets": {
-          "pleazyng-linux-x64.tar.gz": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
-          "pleazyng-source.tar.gz": "cf3d3ab7d01f6476a52a550aec3a048edb004c440ec67650ce4c2a61e2662293"
+          "pleazyng-linux-x64.tar.gz": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
+          "pleazyng-source.tar.gz": "5d07f09e8978bc90017062955e5a0123a9adc56cb2b2fd4b76f8f7d0da5e493f"
         },
         "provenance": {
           "kind": "attested-core-linux-artifact",
           "repository": "snapetech-org/pleazyng",
-          "producer_run_id": 44809271478,
-          "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/44809271478",
-          "artifact_id": 14669945435,
+          "producer_run_id": 44878095638,
+          "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/44878095638",
+          "artifact_id": 14698037701,
           "artifact_name": "linux-x64",
           "signer_workflow": "snapetech-org/pleazyng/.github/workflows/build.yml",
-          "verified_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
-          "verification_sha256": "c04f9bf3ba04803664b7f355e6dfb23c304b5113c813e3f7fb4f6911654d06a0"
+          "verified_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+          "verification_sha256": "b4edf74ecc417cdfc1b785935eff5f4e62c949e9af82bfa0ce87df70e5940744"
         }
       },
       "baseline": {
-        "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-        "version": "3.0.33+192",
-        "release": 5,
-        "tag": "main-240994590dd3-r5",
+        "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+        "version": "3.0.44+203",
+        "release": 47,
+        "tag": "main-3a6628318228-r47",
         "iso_sha256": "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419",
         "status": "qualified",
-        "recipe_tooling_sha": "70fea9e3a33a313f890c92ee275160f5ded892b3",
+        "recipe_tooling_sha": "0520b33f3a3a80b44869b5dac7c76ba3ed3bae1d",
         "evidence_archive": "qa-evidence.tar.gz",
-        "evidence_sha256": "fb9db39bd5c92a8c2c65774e30417fd22ea10612fb079dead055b7dc3fbac687",
+        "evidence_sha256": "87ace10b016e9a6a1f82fbebc305e9689c8b8a33a1838ad569602af2560f4a72",
         "audio_capture": {
-          "pcm_sha256": "22066a7b0ccb36d6c9924126f7e2c2346236d804958d91ec82616c7f22340636",
+          "pcm_sha256": "0d728a2e5c86517552d241dd83cbc0c1bf9a4526914a4e72bd71a0b8a381c7da",
           "note": "Playable copy fills RIFF/data lengths from file size; original capture and PCM payload remain unchanged"
         },
         "checks": [
@@ -224,274 +224,367 @@
           "FEL reference picture accuracy",
           "physical GPU/NPU execution"
         ],
-        "stone": "pleazyng-3.0.33-5-1-x86_64.stone",
-        "stone_sha256": "51bbde111acc48aeb20fa722de462cbc1c14e43c9282baee194458f38c5e9a74",
+        "stone": "pleazyng-3.0.44-47-1-x86_64.stone",
+        "stone_sha256": "e43e87359cd746bcb163877cda3f2c1ec2f64be15d32ff853162c98c20a4efa7",
         "build": {
-          "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-          "version": "3.0.33+192",
-          "tooling_sha": "b27fcf5fef1eca312eb6e2c907d50c23db49a354",
+          "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+          "version": "3.0.44+203",
+          "tooling_sha": "0520b33f3a3a80b44869b5dac7c76ba3ed3bae1d",
           "assets": {
-            "pleazyng-linux-x64.tar.gz": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
-            "pleazyng-source.tar.gz": "d641a878e20adb49ec8ff34a79ea15fefa210e84109738f57879e1d78bf2e309"
+            "pleazyng-linux-x64.tar.gz": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
+            "pleazyng-source.tar.gz": "cf3d3ab7d01f6476a52a550aec3a048edb004c440ec67650ce4c2a61e2662293"
           },
           "provenance": {
             "kind": "attested-core-linux-artifact",
             "repository": "snapetech-org/pleazyng",
-            "producer_run_id": 42992562384,
-            "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/42992562384",
-            "artifact_id": 13847607266,
+            "producer_run_id": 44809271478,
+            "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/44809271478",
+            "artifact_id": 14669945435,
             "artifact_name": "linux-x64",
             "signer_workflow": "snapetech-org/pleazyng/.github/workflows/build.yml",
-            "verified_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-            "verification_sha256": "4e6cd8894b53c98928f7357826188d83da1e3d1c3fa56b14b46f2accdd11e199"
+            "verified_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+            "verification_sha256": "c04f9bf3ba04803664b7f355e6dfb23c304b5113c813e3f7fb4f6911654d06a0"
           }
         },
         "baseline": {
-          "source_sha": null,
-          "legacy_source_sha": "a13b139cd75b8521deedb8dc8ee00928754aac11",
-          "version": "3.0.22+181",
-          "release": 1,
-          "tag": "snapshot-3.0.22-181-r1",
-          "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/snapshot-3.0.22-181-r1",
-          "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index",
-          "stone": "pleazyng-3.0.22-1-1-x86_64.stone",
-          "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
-          "note": "Qualified seed predates canonical main source tracking; exact source archive is attached to the seed release.",
-          "required_candidate_gate_set": "native-lifecycle-v1",
-          "next_candidate_release_checkpoint": "awaiting-owner-final-canonical-target"
+          "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+          "version": "3.0.33+192",
+          "release": 5,
+          "tag": "main-240994590dd3-r5",
+          "iso_sha256": "e348b88da07e5876d1e0fc50e156f0a062c58251ab6deb2a897155980fa6c419",
+          "status": "qualified",
+          "recipe_tooling_sha": "70fea9e3a33a313f890c92ee275160f5ded892b3",
+          "evidence_archive": "qa-evidence.tar.gz",
+          "evidence_sha256": "fb9db39bd5c92a8c2c65774e30417fd22ea10612fb079dead055b7dc3fbac687",
+          "audio_capture": {
+            "pcm_sha256": "22066a7b0ccb36d6c9924126f7e2c2346236d804958d91ec82616c7f22340636",
+            "note": "Playable copy fills RIFF/data lengths from file size; original capture and PCM payload remain unchanged"
+          },
+          "checks": [
+            "native_boulder_build",
+            "native_moss_install",
+            "native_moss_upgrade",
+            "installed_elf",
+            "bundled_im_cache",
+            "ordinary_release_launch",
+            "background_return_playing",
+            "background_return_paused",
+            "route_resume",
+            "bookmark_resume",
+            "audio_clock",
+            "jellyfin_sign_in",
+            "dv_default_on",
+            "fallback_default_on",
+            "visible_h264",
+            "pause",
+            "seek",
+            "fullscreen",
+            "open_media_direct_h264"
+          ],
+          "not_qualified": [
+            "physical HDR/Dolby Vision output",
+            "FEL reference picture accuracy",
+            "physical GPU/NPU execution"
+          ],
+          "stone": "pleazyng-3.0.33-5-1-x86_64.stone",
+          "stone_sha256": "51bbde111acc48aeb20fa722de462cbc1c14e43c9282baee194458f38c5e9a74",
+          "build": {
+            "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+            "version": "3.0.33+192",
+            "tooling_sha": "b27fcf5fef1eca312eb6e2c907d50c23db49a354",
+            "assets": {
+              "pleazyng-linux-x64.tar.gz": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
+              "pleazyng-source.tar.gz": "d641a878e20adb49ec8ff34a79ea15fefa210e84109738f57879e1d78bf2e309"
+            },
+            "provenance": {
+              "kind": "attested-core-linux-artifact",
+              "repository": "snapetech-org/pleazyng",
+              "producer_run_id": 42992562384,
+              "producer_run_url": "https://github.com/snapetech-org/pleazyng/actions/runs/42992562384",
+              "artifact_id": 13847607266,
+              "artifact_name": "linux-x64",
+              "signer_workflow": "snapetech-org/pleazyng/.github/workflows/build.yml",
+              "verified_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+              "verification_sha256": "4e6cd8894b53c98928f7357826188d83da1e3d1c3fa56b14b46f2accdd11e199"
+            }
+          },
+          "baseline": {
+            "source_sha": null,
+            "legacy_source_sha": "a13b139cd75b8521deedb8dc8ee00928754aac11",
+            "version": "3.0.22+181",
+            "release": 1,
+            "tag": "snapshot-3.0.22-181-r1",
+            "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/snapshot-3.0.22-181-r1",
+            "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/snapshot-3.0.22-181-r1/stone.index",
+            "stone": "pleazyng-3.0.22-1-1-x86_64.stone",
+            "stone_sha256": "25c58285a200c9c078ecb8b97f583d3cc0b1730df61dc9a7ed4cc16f99a1b886",
+            "note": "Qualified seed predates canonical main source tracking; exact source archive is attached to the seed release.",
+            "required_candidate_gate_set": "native-lifecycle-v1",
+            "next_candidate_release_checkpoint": "awaiting-owner-final-canonical-target"
+          },
+          "same_app_version_upgrade": false,
+          "source_sha_changed": true,
+          "core_release": {
+            "tag": "v3.0.33",
+            "release_id": 442387942,
+            "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.33",
+            "linux_sha256": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
+            "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+            "linux_producer_run_id": 42992562384,
+            "assembler_run_id": 43135173268,
+            "assembler_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
+            "version_tag_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+            "qualification_run_id": 43142509446,
+            "packaging_recovery": {
+              "packaging_source_sha": "6ebb1f0f559c45fa8a5071744526269394f76308",
+              "receipt_sha256": "2e5d8fcf4d24ee5a9164f381c777e147b45a4eed0646e4c64a030fc3c15f0681",
+              "approval": {
+                "recovery_policy": "frozen-apple-packaging-v1",
+                "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+                "packaging_source_sha": "6ebb1f0f559c45fa8a5071744526269394f76308",
+                "workflow_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
+                "approval_path": ".github/release-packaging-repairs.json",
+                "approval_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
+                "approval_blob_sha": "6ac53b411e428c09b8d1a939c77d2fceb9f9a5c2",
+                "approved_files": {
+                  ".github/workflows/build.yml": "c6a0e17e43579eeb369b06d9cb866ebe589b00ff",
+                  "CHANGELOG.md": "e9de4595fbcf66b0ef2144b61bf416171898c1e9",
+                  "docs/maintainers/full-release-build.md": "0e0d307da8065ee83b2ccfb44767b8d75b2caccb",
+                  "scripts/build_apple_store_archive.py": "31978a785db68c4603dea1a2cc4e5047c8c85b62",
+                  "scripts/checks/test_apple_packaging_repair_controller.py": "3d9d028b75fdf57d4554dea3dda175a81a5b48ab",
+                  "scripts/checks/test_recover_release_platforms.py": "deafbe37b35e8d17204df3855931d468a9976e38",
+                  "scripts/recover_release_platforms.py": "50ec0672824d3270446a7e2f871d04f437016b1c",
+                  "scripts/release_all_platforms.py": "e71d2f10e75b0182c34d1cfdb08b8dd6b666cd19",
+                  "scripts/test_build_apple_store_archive.py": "86b0925df94cf3bea211273a7aca74e47cdabd6c"
+                },
+                "product_tree_sha": "c4e37d550b35366cba05c64eed15a41f77570f28",
+                "packaging_tree_sha": "1e3fe44801092aed14874d632905504b0a22db63"
+              },
+              "tvos_source": {
+                "source_run_id": 43115287017,
+                "source_sha": "1b55a3c46afc842f33e810de899cd7b9c8f16f61",
+                "workflow_source_sha": "fda32a4a6190226266157f77b129566d141e4cba",
+                "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+                "original_source_run_id": 42992562384,
+                "job_id": 130842620394,
+                "run_attempt": 1,
+                "packaging_approval": {
+                  "recovery_policy": "frozen-apple-packaging-v1",
+                  "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+                  "packaging_source_sha": "1b55a3c46afc842f33e810de899cd7b9c8f16f61",
+                  "workflow_source_sha": "fda32a4a6190226266157f77b129566d141e4cba",
+                  "approval_path": ".github/release-packaging-repairs.json",
+                  "approval_source_sha": "fda32a4a6190226266157f77b129566d141e4cba",
+                  "approval_blob_sha": "f33a9bbc49d98dcdd5c64dd45039408371632867",
+                  "approved_files": {
+                    "docs/maintainers/full-release-build.md": "598d30a307e02456496f2dfbf833cc04fec7d29f",
+                    "scripts/build_apple_store_archive.py": "31978a785db68c4603dea1a2cc4e5047c8c85b62",
+                    "scripts/test_build_apple_store_archive.py": "86b0925df94cf3bea211273a7aca74e47cdabd6c"
+                  },
+                  "product_tree_sha": "c4e37d550b35366cba05c64eed15a41f77570f28",
+                  "packaging_tree_sha": "500f6b0921766ec028a826c2bacefda5f679fcd9"
+                },
+                "artifact_id": 13899367677,
+                "artifact_digest": "sha256:6adabf2f8b0f74827abb1f8a6e18d46bd9006eb8eb7143239eaffb6a913fca0f",
+                "platforms_complete": true,
+                "package_sha256": {
+                  "pleazyng-tvos-unsigned.ipa": "15f70e915b4b3b86538602cfe41e4a19b600817a4c992e5b5c86eae3c7770eb4",
+                  "pleazyng-tvos-appstore.ipa": "5a168717b7d8bdb4407939a7568d42c26b70b5fc9206b077ad42710e3b23c7b1"
+                }
+              },
+              "ios_source": {
+                "source_run_id": 43120491761,
+                "source_sha": "6168aca9ad93e6a4336c11843f4904b923444b18",
+                "workflow_source_sha": "1fb345699638a361e9549a0412d44daed3ae2df5",
+                "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+                "original_source_run_id": 42992562384,
+                "job_id": 130859966667,
+                "run_attempt": 1,
+                "packaging_approval": {
+                  "recovery_policy": "frozen-apple-packaging-v1",
+                  "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
+                  "packaging_source_sha": "6168aca9ad93e6a4336c11843f4904b923444b18",
+                  "workflow_source_sha": "1fb345699638a361e9549a0412d44daed3ae2df5",
+                  "approval_path": ".github/release-packaging-repairs.json",
+                  "approval_source_sha": "1fb345699638a361e9549a0412d44daed3ae2df5",
+                  "approval_blob_sha": "a3ec49374265fce4fea3116235d1025ac5ba7f2c",
+                  "approved_files": {
+                    "CHANGELOG.md": "13da36359f9cab29aac3cd20d20ce122d5024321",
+                    "docs/maintainers/full-release-build.md": "8798f33738e902b3b4ca9048f701e5526d914817",
+                    "scripts/build_apple_store_archive.py": "31978a785db68c4603dea1a2cc4e5047c8c85b62",
+                    "scripts/checks/test_recover_release_platforms.py": "849c793c59df671eb950f84cf307c3095c950211",
+                    "scripts/recover_release_platforms.py": "681edcf76c1e0d6de47c4efaa66d83ee7cce4dc8",
+                    "scripts/test_build_apple_store_archive.py": "86b0925df94cf3bea211273a7aca74e47cdabd6c"
+                  },
+                  "product_tree_sha": "c4e37d550b35366cba05c64eed15a41f77570f28",
+                  "packaging_tree_sha": "5756b3bc51056726f2d166acbe6644730bd79feb"
+                },
+                "artifact_id": 13906345542,
+                "artifact_digest": "sha256:24986b3c8fe522a006b1953e7213d69bc32d042095999d7215cf7b19161d41aa",
+                "platforms_complete": true,
+                "package_sha256": {
+                  "pleazyng-ios-unsigned.ipa": "260bf2b3f1621af603ceae9ed9e5f3bc85a2414ee7f55e3be43085c55b1b6aef",
+                  "pleazyng-ios-appstore.ipa": "ba4feca06f3525a524635c7e8a6d8fc931e0d5c71ce4fa0e494a2991627316a2"
+                }
+              }
+            }
+          },
+          "published_at": "2026-11-12T02:58:05.197815+00:00",
+          "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-240994590dd3-r5",
+          "feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/raw/refs/heads/main/feed/stone.index",
+          "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-240994590dd3-r5/stone.index",
+          "assets": {
+            "pleazyng-3.0.33-5-1-x86_64.stone": "51bbde111acc48aeb20fa722de462cbc1c14e43c9282baee194458f38c5e9a74",
+            "stone.index": "65afb27124f3e313aed4eafebace57833fc1e7aa7168793bdb2e42b4620c61d3",
+            "feed.index": "a1689bedb768dd83c2890ff659a222ddd5484d3ef4e7acfa4798e4f0e0f1d076",
+            "qualification.json": "755c0014eca3506200bee785df4fa455a8a79afc3b42bd8646cb96a4f47bbcc9",
+            "qa-evidence.tar.gz": "fb9db39bd5c92a8c2c65774e30417fd22ea10612fb079dead055b7dc3fbac687",
+            "recipe.tar.gz": "bdd35fe0418d168840269681b91c6954e288f42f06bfc5c5f9dd6afe03c29824",
+            "pleazyng-linux-x64.tar.gz": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
+            "pleazyng-source.tar.gz": "d641a878e20adb49ec8ff34a79ea15fefa210e84109738f57879e1d78bf2e309",
+            "core-release.json": "9addc0fed83d601cd721c9301ab06b1193d56203892181f8c7bf9ca4a2e0f58f",
+            "SHA256SUMS.txt": "2a763b7e1e4e3241d938790f10216841de4fba540ca16d277a3ab427305b1301"
+          }
         },
         "same_app_version_upgrade": false,
         "source_sha_changed": true,
         "core_release": {
-          "tag": "v3.0.33",
-          "release_id": 442387942,
-          "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.33",
-          "linux_sha256": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
-          "source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-          "linux_producer_run_id": 42992562384,
-          "assembler_run_id": 43135173268,
-          "assembler_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
-          "version_tag_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-          "qualification_run_id": 43142509446,
+          "tag": "v3.0.44",
+          "release_id": 453390773,
+          "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.44",
+          "linux_sha256": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
+          "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+          "linux_producer_run_id": 44809271478,
+          "assembler_run_id": 44856843236,
+          "assembler_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+          "version_tag_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+          "qualification_run_id": 44871834611,
           "packaging_recovery": {
-            "packaging_source_sha": "6ebb1f0f559c45fa8a5071744526269394f76308",
-            "receipt_sha256": "2e5d8fcf4d24ee5a9164f381c777e147b45a4eed0646e4c64a030fc3c15f0681",
+            "recovery_policy": "macos-packaging-provenance-v1",
+            "product_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
+            "packaging_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+            "workflow_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
+            "source_run_id": 44809271478,
+            "assembly_run_id": 44856843236,
+            "recovered_macos": {
+              "source_run_id": 44843977176,
+              "source_sha": "86446dca04e1e3a395c751c641ac611ad4e07d03",
+              "job_id": 136659369338,
+              "compilation_reused": false
+            },
             "approval": {
-              "recovery_policy": "frozen-apple-packaging-v1",
-              "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-              "packaging_source_sha": "6ebb1f0f559c45fa8a5071744526269394f76308",
-              "workflow_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
-              "approval_path": ".github/release-packaging-repairs.json",
-              "approval_source_sha": "f9743cf2d21218ea67b2a3978699f411070c44b6",
-              "approval_blob_sha": "6ac53b411e428c09b8d1a939c77d2fceb9f9a5c2",
-              "approved_files": {
-                ".github/workflows/build.yml": "c6a0e17e43579eeb369b06d9cb866ebe589b00ff",
-                "CHANGELOG.md": "e9de4595fbcf66b0ef2144b61bf416171898c1e9",
-                "docs/maintainers/full-release-build.md": "0e0d307da8065ee83b2ccfb44767b8d75b2caccb",
-                "scripts/build_apple_store_archive.py": "31978a785db68c4603dea1a2cc4e5047c8c85b62",
-                "scripts/checks/test_apple_packaging_repair_controller.py": "3d9d028b75fdf57d4554dea3dda175a81a5b48ab",
-                "scripts/checks/test_recover_release_platforms.py": "deafbe37b35e8d17204df3855931d468a9976e38",
-                "scripts/recover_release_platforms.py": "50ec0672824d3270446a7e2f871d04f437016b1c",
-                "scripts/release_all_platforms.py": "e71d2f10e75b0182c34d1cfdb08b8dd6b666cd19",
-                "scripts/test_build_apple_store_archive.py": "86b0925df94cf3bea211273a7aca74e47cdabd6c"
-              },
-              "product_tree_sha": "c4e37d550b35366cba05c64eed15a41f77570f28",
-              "packaging_tree_sha": "1e3fe44801092aed14874d632905504b0a22db63"
+              "verified_platform_provenance": true
             },
-            "tvos_source": {
-              "source_run_id": 43115287017,
-              "source_sha": "1b55a3c46afc842f33e810de899cd7b9c8f16f61",
-              "workflow_source_sha": "fda32a4a6190226266157f77b129566d141e4cba",
-              "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-              "original_source_run_id": 42992562384,
-              "job_id": 130842620394,
-              "run_attempt": 1,
-              "packaging_approval": {
-                "recovery_policy": "frozen-apple-packaging-v1",
-                "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-                "packaging_source_sha": "1b55a3c46afc842f33e810de899cd7b9c8f16f61",
-                "workflow_source_sha": "fda32a4a6190226266157f77b129566d141e4cba",
-                "approval_path": ".github/release-packaging-repairs.json",
-                "approval_source_sha": "fda32a4a6190226266157f77b129566d141e4cba",
-                "approval_blob_sha": "f33a9bbc49d98dcdd5c64dd45039408371632867",
-                "approved_files": {
-                  "docs/maintainers/full-release-build.md": "598d30a307e02456496f2dfbf833cc04fec7d29f",
-                  "scripts/build_apple_store_archive.py": "31978a785db68c4603dea1a2cc4e5047c8c85b62",
-                  "scripts/test_build_apple_store_archive.py": "86b0925df94cf3bea211273a7aca74e47cdabd6c"
-                },
-                "product_tree_sha": "c4e37d550b35366cba05c64eed15a41f77570f28",
-                "packaging_tree_sha": "500f6b0921766ec028a826c2bacefda5f679fcd9"
-              },
-              "artifact_id": 13899367677,
-              "artifact_digest": "sha256:6adabf2f8b0f74827abb1f8a6e18d46bd9006eb8eb7143239eaffb6a913fca0f",
-              "platforms_complete": true,
-              "package_sha256": {
-                "pleazyng-tvos-unsigned.ipa": "15f70e915b4b3b86538602cfe41e4a19b600817a4c992e5b5c86eae3c7770eb4",
-                "pleazyng-tvos-appstore.ipa": "5a168717b7d8bdb4407939a7568d42c26b70b5fc9206b077ad42710e3b23c7b1"
-              }
-            },
-            "ios_source": {
-              "source_run_id": 43120491761,
-              "source_sha": "6168aca9ad93e6a4336c11843f4904b923444b18",
-              "workflow_source_sha": "1fb345699638a361e9549a0412d44daed3ae2df5",
-              "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-              "original_source_run_id": 42992562384,
-              "job_id": 130859966667,
-              "run_attempt": 1,
-              "packaging_approval": {
-                "recovery_policy": "frozen-apple-packaging-v1",
-                "product_source_sha": "240994590dd3e5411ee3b02c2bcfc0a1fd51a431",
-                "packaging_source_sha": "6168aca9ad93e6a4336c11843f4904b923444b18",
-                "workflow_source_sha": "1fb345699638a361e9549a0412d44daed3ae2df5",
-                "approval_path": ".github/release-packaging-repairs.json",
-                "approval_source_sha": "1fb345699638a361e9549a0412d44daed3ae2df5",
-                "approval_blob_sha": "a3ec49374265fce4fea3116235d1025ac5ba7f2c",
-                "approved_files": {
-                  "CHANGELOG.md": "13da36359f9cab29aac3cd20d20ce122d5024321",
-                  "docs/maintainers/full-release-build.md": "8798f33738e902b3b4ca9048f701e5526d914817",
-                  "scripts/build_apple_store_archive.py": "31978a785db68c4603dea1a2cc4e5047c8c85b62",
-                  "scripts/checks/test_recover_release_platforms.py": "849c793c59df671eb950f84cf307c3095c950211",
-                  "scripts/recover_release_platforms.py": "681edcf76c1e0d6de47c4efaa66d83ee7cce4dc8",
-                  "scripts/test_build_apple_store_archive.py": "86b0925df94cf3bea211273a7aca74e47cdabd6c"
-                },
-                "product_tree_sha": "c4e37d550b35366cba05c64eed15a41f77570f28",
-                "packaging_tree_sha": "5756b3bc51056726f2d166acbe6644730bd79feb"
-              },
-              "artifact_id": 13906345542,
-              "artifact_digest": "sha256:24986b3c8fe522a006b1953e7213d69bc32d042095999d7215cf7b19161d41aa",
-              "platforms_complete": true,
-              "package_sha256": {
-                "pleazyng-ios-unsigned.ipa": "260bf2b3f1621af603ceae9ed9e5f3bc85a2414ee7f55e3be43085c55b1b6aef",
-                "pleazyng-ios-appstore.ipa": "ba4feca06f3525a524635c7e8a6d8fc931e0d5c71ce4fa0e494a2991627316a2"
-              }
-            }
+            "receipt_sha256": "0d9dc34a9c8d1f643d9ffa04efd4593a903b3bbb065ec2d673d9872fb18507e8"
           }
         },
-        "published_at": "2026-11-12T02:58:05.197815+00:00",
-        "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-240994590dd3-r5",
+        "published_at": "2026-11-21T05:53:35.196289+00:00",
+        "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-3a6628318228-r47",
         "feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/raw/refs/heads/main/feed/stone.index",
-        "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-240994590dd3-r5/stone.index",
+        "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-3a6628318228-r47/stone.index",
         "assets": {
-          "pleazyng-3.0.33-5-1-x86_64.stone": "51bbde111acc48aeb20fa722de462cbc1c14e43c9282baee194458f38c5e9a74",
-          "stone.index": "65afb27124f3e313aed4eafebace57833fc1e7aa7168793bdb2e42b4620c61d3",
-          "feed.index": "a1689bedb768dd83c2890ff659a222ddd5484d3ef4e7acfa4798e4f0e0f1d076",
-          "qualification.json": "755c0014eca3506200bee785df4fa455a8a79afc3b42bd8646cb96a4f47bbcc9",
-          "qa-evidence.tar.gz": "fb9db39bd5c92a8c2c65774e30417fd22ea10612fb079dead055b7dc3fbac687",
-          "recipe.tar.gz": "bdd35fe0418d168840269681b91c6954e288f42f06bfc5c5f9dd6afe03c29824",
-          "pleazyng-linux-x64.tar.gz": "c9aa2d2e4e84480f0c4c60026b85c6fd5ee754cc4512441a757c45203dd9e15a",
-          "pleazyng-source.tar.gz": "d641a878e20adb49ec8ff34a79ea15fefa210e84109738f57879e1d78bf2e309",
-          "core-release.json": "9addc0fed83d601cd721c9301ab06b1193d56203892181f8c7bf9ca4a2e0f58f",
-          "SHA256SUMS.txt": "2a763b7e1e4e3241d938790f10216841de4fba540ca16d277a3ab427305b1301"
+          "pleazyng-3.0.44-47-1-x86_64.stone": "e43e87359cd746bcb163877cda3f2c1ec2f64be15d32ff853162c98c20a4efa7",
+          "stone.index": "1cd4fcb1f27c2b59fd6dbbf269507a0e69ef90fd21b55618320e803eb35d335e",
+          "feed.index": "d6753cb0a315a14079025a19559aa44fe382739184f72c77bad803cf35993a16",
+          "qualification.json": "02c66fc4358ddca71252a0eac3174e982f778346b52904b5a5fcfcd4d877664b",
+          "qa-evidence.tar.gz": "87ace10b016e9a6a1f82fbebc305e9689c8b8a33a1838ad569602af2560f4a72",
+          "recipe.tar.gz": "ef426c27eb73c016360d3583ff08506d98c9a3152780aa3dd981bc184f06d2df",
+          "pleazyng-linux-x64.tar.gz": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
+          "pleazyng-source.tar.gz": "cf3d3ab7d01f6476a52a550aec3a048edb004c440ec67650ce4c2a61e2662293",
+          "core-release.json": "008a257e7c2bbc225e73582bb034f056a4c194d7d7d383f3a4a8f94601b6e43c",
+          "SHA256SUMS.txt": "d75a6d6e857119c845e24d1f03465ed98dc86cd325f63dde229c957e7d1d67ca"
         }
       },
       "same_app_version_upgrade": false,
       "source_sha_changed": true,
       "core_release": {
-        "tag": "v3.0.44",
-        "release_id": 453390773,
-        "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.44",
-        "linux_sha256": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
-        "source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
-        "linux_producer_run_id": 44809271478,
-        "assembler_run_id": 44856843236,
-        "assembler_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
-        "version_tag_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
-        "qualification_run_id": 44871834611,
-        "packaging_recovery": {
-          "recovery_policy": "macos-packaging-provenance-v1",
-          "product_source_sha": "3a66283182287013e2dab5d1e3666beda95b03b6",
-          "packaging_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
-          "workflow_source_sha": "4fe47a981dea59c5ccc26e1f8fdefcf9f38584dd",
-          "source_run_id": 44809271478,
-          "assembly_run_id": 44856843236,
-          "recovered_macos": {
-            "source_run_id": 44843977176,
-            "source_sha": "86446dca04e1e3a395c751c641ac611ad4e07d03",
-            "job_id": 136659369338,
-            "compilation_reused": false
-          },
-          "approval": {
-            "verified_platform_provenance": true
-          },
-          "receipt_sha256": "0d9dc34a9c8d1f643d9ffa04efd4593a903b3bbb065ec2d673d9872fb18507e8"
-        }
+        "tag": "v3.0.45",
+        "release_id": 453651522,
+        "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.45",
+        "linux_sha256": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
+        "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+        "linux_producer_run_id": 44878095638,
+        "assembler_run_id": 44878095638,
+        "assembler_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+        "version_tag_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
+        "qualification_run_id": 44900811508
       },
-      "published_at": "2026-11-21T05:53:35.196289+00:00",
-      "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-3a6628318228-r47",
+      "published_at": "2026-11-21T12:04:57.172325+00:00",
+      "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-3f135d18dc5e-r57",
       "feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/raw/refs/heads/main/feed/stone.index",
-      "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-3a6628318228-r47/stone.index",
+      "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-3f135d18dc5e-r57/stone.index",
       "assets": {
-        "pleazyng-3.0.44-47-1-x86_64.stone": "e43e87359cd746bcb163877cda3f2c1ec2f64be15d32ff853162c98c20a4efa7",
-        "stone.index": "1cd4fcb1f27c2b59fd6dbbf269507a0e69ef90fd21b55618320e803eb35d335e",
-        "feed.index": "d6753cb0a315a14079025a19559aa44fe382739184f72c77bad803cf35993a16",
-        "qualification.json": "02c66fc4358ddca71252a0eac3174e982f778346b52904b5a5fcfcd4d877664b",
-        "qa-evidence.tar.gz": "87ace10b016e9a6a1f82fbebc305e9689c8b8a33a1838ad569602af2560f4a72",
-        "recipe.tar.gz": "ef426c27eb73c016360d3583ff08506d98c9a3152780aa3dd981bc184f06d2df",
-        "pleazyng-linux-x64.tar.gz": "b25d746bc5f0f36d8801e1742a7f647d8e30c55088eef480d75f6ed6924e0100",
-        "pleazyng-source.tar.gz": "cf3d3ab7d01f6476a52a550aec3a048edb004c440ec67650ce4c2a61e2662293",
-        "core-release.json": "008a257e7c2bbc225e73582bb034f056a4c194d7d7d383f3a4a8f94601b6e43c",
-        "SHA256SUMS.txt": "d75a6d6e857119c845e24d1f03465ed98dc86cd325f63dde229c957e7d1d67ca"
+        "pleazyng-3.0.45-57-1-x86_64.stone": "33d8c344d71b25de5564ad29a452385ccdbba9d4defdce9e42f29d11e76af0c8",
+        "stone.index": "5e1768fdfa9ff55b1a067cd5ecbfc7e0ea936c12121c4cf94d17917de236becd",
+        "feed.index": "0720dfeda345a06b1cbb326c6e1d1ab6a84dd51eab6b81b571e396647a24e938",
+        "qualification.json": "d426cb3249c4c4b3d0899eed5af73208349e34343dc0202d8aa970ae8d06252b",
+        "qa-evidence.tar.gz": "2588e510695f2e941c7254a73deb34adb58930a818761e569ff1f1d4df4c91e4",
+        "recipe.tar.gz": "aea880b79aa2191438087c7656aa253408ba3d8f0476b8025ac390137eb021ce",
+        "pleazyng-linux-x64.tar.gz": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
+        "pleazyng-source.tar.gz": "5d07f09e8978bc90017062955e5a0123a9adc56cb2b2fd4b76f8f7d0da5e493f",
+        "core-release.json": "fffcad5f3ce47d29dc22b9c604bf2c381a6882971355c68221fa28582fce835f",
+        "SHA256SUMS.txt": "35289142cd3193b5eaca285865a153a5dbc21f6ea94715375e89fb179be1e423"
       }
     },
     "same_app_version_upgrade": false,
     "source_sha_changed": true,
     "core_release": {
-      "tag": "v3.0.45",
-      "release_id": 453651522,
-      "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.45",
-      "linux_sha256": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
-      "source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
-      "linux_producer_run_id": 44878095638,
-      "assembler_run_id": 44878095638,
-      "assembler_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
-      "version_tag_source_sha": "3f135d18dc5ef1bb7984ca1959900d86c6e898de",
-      "qualification_run_id": 44900811508
+      "tag": "v3.0.49",
+      "release_id": 454292197,
+      "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.49",
+      "linux_sha256": "1263b68e5718b9c654059e34eb4f13c30fbdb6ad93e8ce1c5c12380133b8ef4d",
+      "source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+      "linux_producer_run_id": 44994477099,
+      "assembler_run_id": 44994477099,
+      "assembler_source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+      "version_tag_source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
+      "qualification_run_id": 45000960732
     },
-    "published_at": "2026-11-21T12:04:57.172325+00:00",
-    "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-3f135d18dc5e-r57",
+    "published_at": "2026-11-22T08:20:59.195429+00:00",
+    "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-7ccbe6c73d45-r61",
     "feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/raw/refs/heads/main/feed/stone.index",
-    "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-3f135d18dc5e-r57/stone.index",
+    "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-7ccbe6c73d45-r61/stone.index",
     "assets": {
-      "pleazyng-3.0.45-57-1-x86_64.stone": "33d8c344d71b25de5564ad29a452385ccdbba9d4defdce9e42f29d11e76af0c8",
-      "stone.index": "5e1768fdfa9ff55b1a067cd5ecbfc7e0ea936c12121c4cf94d17917de236becd",
-      "feed.index": "0720dfeda345a06b1cbb326c6e1d1ab6a84dd51eab6b81b571e396647a24e938",
-      "qualification.json": "d426cb3249c4c4b3d0899eed5af73208349e34343dc0202d8aa970ae8d06252b",
-      "qa-evidence.tar.gz": "2588e510695f2e941c7254a73deb34adb58930a818761e569ff1f1d4df4c91e4",
-      "recipe.tar.gz": "aea880b79aa2191438087c7656aa253408ba3d8f0476b8025ac390137eb021ce",
-      "pleazyng-linux-x64.tar.gz": "9f0f1d2eb30d0363ea9116ea079524fcba10c6ead766da0b209cdc46b02330ec",
-      "pleazyng-source.tar.gz": "5d07f09e8978bc90017062955e5a0123a9adc56cb2b2fd4b76f8f7d0da5e493f",
-      "core-release.json": "fffcad5f3ce47d29dc22b9c604bf2c381a6882971355c68221fa28582fce835f",
-      "SHA256SUMS.txt": "35289142cd3193b5eaca285865a153a5dbc21f6ea94715375e89fb179be1e423"
+      "pleazyng-3.0.49-61-1-x86_64.stone": "965d8ccbb540b90d9931c736d64bd8046af7f864d7f7efb946da0f828c0673e0",
+      "stone.index": "9b12a31624e9a1627c5280bd3aac42844b9fe9bec421c69828577db34af3fb6b",
+      "feed.index": "56d7e9276018ea3784a18e94a3341408968ae478c4155595fb9a3a2ae2c5362f",
+      "qualification.json": "bc7e5c8a583155c04f46b99938e9da526f5917649588f58301e42eac93faee3f",
+      "qa-evidence.tar.gz": "86622c8575c63109ccb369dde789c9f63bdbf9d33b5655536476fc22431b3ce9",
+      "recipe.tar.gz": "ffb0e09c0d6d5adaaaf6cba1752dff1fce9738731e7032cff92782c93cd4af9b",
+      "pleazyng-linux-x64.tar.gz": "1263b68e5718b9c654059e34eb4f13c30fbdb6ad93e8ce1c5c12380133b8ef4d",
+      "pleazyng-source.tar.gz": "98381c6aec190f195c7388049a441e2edb9431c56c5d0cf90e84283dfed24e0c",
+      "core-release.json": "404c6124a1eb699a3873a6c1eb149bc8ce85235373cf3f0156383a356d1f9451",
+      "SHA256SUMS.txt": "4265593d90703e62d8c1c4c683327f217a64ca29a9bc7c2d6d17821fb8875632"
     }
   },
   "same_app_version_upgrade": false,
   "source_sha_changed": true,
   "core_release": {
-    "tag": "v3.0.49",
-    "release_id": 454292197,
-    "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.49",
-    "linux_sha256": "1263b68e5718b9c654059e34eb4f13c30fbdb6ad93e8ce1c5c12380133b8ef4d",
-    "source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
-    "linux_producer_run_id": 44994477099,
-    "assembler_run_id": 44994477099,
-    "assembler_source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
-    "version_tag_source_sha": "7ccbe6c73d45ec80edbdd1615ec9163e320c8f44",
-    "qualification_run_id": 45000960732
+    "tag": "v3.0.50",
+    "release_id": 455042466,
+    "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.50",
+    "linux_sha256": "35471df291f1ea6e5ed34daf52a5ce77d607650b05f9e36b240893146a2ee435",
+    "source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
+    "linux_producer_run_id": 45104918285,
+    "assembler_run_id": 45104918285,
+    "assembler_source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
+    "version_tag_source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
+    "qualification_run_id": 45183456624
   },
-  "published_at": "2026-11-22T08:20:59.195429+00:00",
-  "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-7ccbe6c73d45-r61",
+  "published_at": "2026-11-23T13:45:36.523040+00:00",
+  "release_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-9ac7a3aecab8-r67",
   "feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/raw/refs/heads/main/feed/stone.index",
-  "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-7ccbe6c73d45-r61/stone.index",
+  "release_feed_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-9ac7a3aecab8-r67/stone.index",
   "assets": {
-    "pleazyng-3.0.49-61-1-x86_64.stone": "965d8ccbb540b90d9931c736d64bd8046af7f864d7f7efb946da0f828c0673e0",
-    "stone.index": "9b12a31624e9a1627c5280bd3aac42844b9fe9bec421c69828577db34af3fb6b",
-    "feed.index": "56d7e9276018ea3784a18e94a3341408968ae478c4155595fb9a3a2ae2c5362f",
-    "qualification.json": "bc7e5c8a583155c04f46b99938e9da526f5917649588f58301e42eac93faee3f",
-    "qa-evidence.tar.gz": "86622c8575c63109ccb369dde789c9f63bdbf9d33b5655536476fc22431b3ce9",
-    "recipe.tar.gz": "ffb0e09c0d6d5adaaaf6cba1752dff1fce9738731e7032cff92782c93cd4af9b",
-    "pleazyng-linux-x64.tar.gz": "1263b68e5718b9c654059e34eb4f13c30fbdb6ad93e8ce1c5c12380133b8ef4d",
-    "pleazyng-source.tar.gz": "98381c6aec190f195c7388049a441e2edb9431c56c5d0cf90e84283dfed24e0c",
-    "core-release.json": "404c6124a1eb699a3873a6c1eb149bc8ce85235373cf3f0156383a356d1f9451",
-    "SHA256SUMS.txt": "4265593d90703e62d8c1c4c683327f217a64ca29a9bc7c2d6d17821fb8875632"
+    "pleazyng-3.0.50-67-1-x86_64.stone": "826f6d93c2c4c6f65259f9750a16ed7f8d0a49b1e71770289a0665b9fa7e2f79",
+    "stone.index": "a0de8126f46a1d01869d41e27065d48c5e7a23bb80658c65a6d4e582a50a26d0",
+    "feed.index": "1d2968b8176b2dbe02051408e21b4d7709d5dd499733cda1fa7a229d4bab10d4",
+    "qualification.json": "5f9127b3f751027d72ccd8eee685f027415afb2779a50420860d0e2888659d42",
+    "qa-evidence.tar.gz": "a491c75b194211c0085c2d984d9adfc3d647c69b0860a06595cc9f22679b610e",
+    "recipe.tar.gz": "dadc2ea10286bf653abd9696f04b88861f99068c738aa5be53d9268e591a1a2a",
+    "pleazyng-linux-x64.tar.gz": "35471df291f1ea6e5ed34daf52a5ce77d607650b05f9e36b240893146a2ee435",
+    "pleazyng-source.tar.gz": "e316f690c34976caf67cbcfc6bc71f49ebb6e6c294ff4990e6d4f17e8dc7ded2",
+    "core-release.json": "f011c3f963877b518350b82401f7f0c12ea06c4feb3036ac9114d943416bf98c",
+    "SHA256SUMS.txt": "9ae53590c0f875a43976caa89a46a346d50cb67db970708534882c27974d7153"
   }
 }

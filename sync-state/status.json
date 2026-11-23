@@ -1,18 +1,6 @@
 {
   "source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
-  "core_producer_run_id": 45104918285,
   "core_tag": "v3.0.50",
-  "core_release_id": 455042466,
-  "core_linux_sha256": "35471df291f1ea6e5ed34daf52a5ce77d607650b05f9e36b240893146a2ee435",
-  "core_release_url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.50",
-  "core_run_id": 45104918285,
-  "core_source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
-  "version_tag_source_sha": "9ac7a3aecab8839e913f6adae62d902cd81cc1cb",
-  "core_packaging_source_sha": "",
-  "core_recovery_sha256": "",
-  "build": true,
-  "verify_public": true,
-  "release": 67,
-  "phase": "building",
-  "observed_at": "2026-11-23T13:24:15.653377+00:00"
+  "phase": "published",
+  "published_at": "2026-11-23T13:45:36.524331+00:00"
 }
