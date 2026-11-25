@@ -310,6 +310,24 @@
     "release": 68,
     "channel_tag": "main-cd7b18d7013e-r68",
     "channel_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-cd7b18d7013e-r68",
-    "published_at": "2026-11-25T04:03:20.407846+00:00"
+    "published_at": "2026-11-25T04:03:20.407846+00:00",
+    "public_verification": {
+      "status": "passed",
+      "source_sha": "cd7b18d7013edf93cb345738e8deeb4cc809473c",
+      "version": "3.0.51+210",
+      "release": 68,
+      "tag": "main-cd7b18d7013e-r68",
+      "checks": [
+        "anonymous_live_index_digest",
+        "anonymous_pinned_index_digest",
+        "native_live_moss_install",
+        "native_pinned_moss_reinstall",
+        "ordinary_launch",
+        "runtime_source_version"
+      ],
+      "run_url": "https://github.com/snapetech-org/pleazyng-aerynos/actions/runs/45541957115",
+      "verified_at": "2026-11-25T04:07:32.532600+00:00",
+      "report_sha256": "4656bbd175fcf5f062fbf766fc607779c6846c9a864179851d755dca5352a203"
+    }
   }
 }
