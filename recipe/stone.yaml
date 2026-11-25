@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-only
 name        : pleazyng
-version     : "3.0.51"
-release     : 68
+version     : "3.0.52"
+release     : 69
 homepage    : https://github.com/snapetech-org/pleazyng
 upstreams   :
-    - https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-cd7b18d7013e-r68/pleazyng-linux-x64.tar.gz:
-        hash: 30832ba1b818e73f0b2863dccd47320e9be8fef006c612a5a65fc153cbedd3b6
+    - https://github.com/snapetech-org/pleazyng-aerynos/releases/download/main-d240ae2c8700-r69/pleazyng-linux-x64.tar.gz:
+        hash: d3d0d6cbc763faf048bf78e13c9de2ed6289c893ee1b1dc8728c225e2efe2676
         stripdirs: 0
         unpackdir: pleazyng
     - https://security.ubuntu.com/ubuntu/pool/main/w/webkit2gtk/libwebkit2gtk-4.1-0_2.52.6-0ubuntu0.24.04.2_amd64.deb:
