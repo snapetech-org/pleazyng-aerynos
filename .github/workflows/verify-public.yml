@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: snapetech-org/pleazyng
-          ref: main
+          ref: 7e73a69b61e5b090891ea4ae14d3f0c6b9b46fb1
           path: tooling
           persist-credentials: false
           sparse-checkout: scripts

@@ -477,16 +477,18 @@ class MacosPackagingProvenanceTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         sync = (root / '.github/workflows/sync.yml').read_text(encoding='utf-8')
         retry = (root / '.github/workflows/retry-publish.yml').read_text(encoding='utf-8')
+        public = (root / '.github/workflows/verify-public.yml').read_text(encoding='utf-8')
         checkout = ('repository: snapetech-org/pleazyng\n'
-                    '          ref: b8a21e26d29b54075ff4828ad5e9f648e166d2a5\n'
+                    '          ref: 7e73a69b61e5b090891ea4ae14d3f0c6b9b46fb1\n'
                     '          path: tooling\n          persist-credentials: false\n'
                     '          sparse-checkout: scripts')
-        self.assertEqual(sync.count(checkout), 2)
-        self.assertIn('repository: snapetech-org/pleazyng\n          ref: main\n'
-                      '          path: tooling', sync)
+        self.assertEqual(sync.count(checkout), 3)
+        self.assertNotIn('repository: snapetech-org/pleazyng\n          ref: main\n'
+                         '          path: tooling', sync)
         self.assertIn('PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling', sync)
         self.assertIn('CORE_RUN_ATTEMPT: ${{ needs.plan.outputs.core_run_attempt }}', sync)
         self.assertIn(checkout, retry)
+        self.assertIn(checkout, public)
         self.assertIn('PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling', retry)
         self.assertIn('aerynos-qualify.yml@9a0373938f7dfb97578a8a5e4e2ac45d2a6f75a9', sync)
 

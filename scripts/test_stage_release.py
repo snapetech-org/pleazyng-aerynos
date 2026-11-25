@@ -36,7 +36,9 @@ class PublishedStagingTests(unittest.TestCase):
     def test_workflow_uses_only_the_separate_trusted_main_tooling_checkout(self):
         workflow = Path(__file__).resolve().parents[1] / '.github/workflows/sync.yml'
         text = workflow.read_text(encoding='utf-8')
-        self.assertIn('repository: snapetech-org/pleazyng\n          ref: main\n          path: tooling', text)
+        self.assertIn('repository: snapetech-org/pleazyng\n'
+                      '          ref: 7e73a69b61e5b090891ea4ae14d3f0c6b9b46fb1\n'
+                      '          path: tooling', text)
         self.assertIn('python3 scripts/stage_release.py --tooling tooling \\', text)
         self.assertNotIn('path: source', text)
         self.assertNotIn('--source source', text)

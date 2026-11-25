@@ -166,7 +166,7 @@ A release can also finish embedded Apple native CI through a supplemental
 qualification run. Its receipt carries `qualification_run_id` rather than a
 frozen packaging repair identity. The resolver checks the complete receipt
 against the canonical supplemental verifier pinned at
-`b8a21e26d29b54075ff4828ad5e9f648e166d2a5`, verifies the exact
+`7e73a69b61e5b090891ea4ae14d3f0c6b9b46fb1`, verifies the exact
 assembler attempt from the attested `SHA256SUMS.txt`, and requires the expected
 assembly title. The original version-tag product and Linux producer remain
 unchanged; native aerynOS build and installation/playback qualification still
