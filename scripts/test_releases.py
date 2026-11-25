@@ -33,16 +33,28 @@ class ReleaseDeliveryTests(unittest.TestCase):
     def test_verified_identity_comes_from_certificate_and_requires_unique_producer(self):
         good = self.verified()
         self.assertEqual(releases.producer_from_verification(good), ('a' * 40, 42))
+        self.assertEqual(releases.producer_attempt_from_verification(good), ('a' * 40, 42, 1))
         for key, value in [('sourceRepositoryIdentifier', '99'), ('sourceRepositoryDigest', 'main'),
                            ('runInvocationURI', 'https://github.com/attacker/repo/actions/runs/42')]:
             bad = copy.deepcopy(good)
             bad[0]['verificationResult']['signature']['certificate'][key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
                 releases.producer_from_verification(bad)
+            with self.subTest(key=key, attempt=True), self.assertRaises(ValueError):
+                releases.producer_attempt_from_verification(bad)
         other = copy.deepcopy(good)
         other[0]['verificationResult']['signature']['certificate']['sourceRepositoryDigest'] = 'b' * 40
         with self.assertRaises(ValueError):
             releases.producer_from_verification(good + other)
+        with self.assertRaises(ValueError):
+            releases.producer_attempt_from_verification(good + other)
+
+    def test_checksum_attestation_requires_one_explicit_attempt(self):
+        proof = self.verified()
+        proof[0]['verificationResult']['signature']['certificate']['runInvocationURI'] = (
+            f'https://github.com/{control.CANONICAL}/actions/runs/42')
+        with self.assertRaisesRegex(ValueError, 'exactly one canonical workflow attempt'):
+            releases.producer_attempt_from_verification(proof)
 
     def test_package_counter_survives_failed_uploads_and_different_workflow_counters(self):
         self.assertEqual(releases.next_release({'release': 4}, {'release': 12, 'phase': 'failed'}, 2), 13)
@@ -68,22 +80,26 @@ class ReleaseDeliveryTests(unittest.TestCase):
         checksum = hashlib.sha256(payload).hexdigest()
         release = self.release()
         release['assets'][0]['digest'] = 'sha256:' + checksum
+        manifest = checksum + '  pleazyng-linux-x64.tar.gz\n'
+        release['assets'].append({'name': 'SHA256SUMS.txt',
+                                  'digest': 'sha256:' + hashlib.sha256(manifest.encode()).hexdigest()})
         calls = []
         def download(arguments):
             calls.append(arguments)
             name = arguments[arguments.index('--pattern') + 1]
             target = Path(arguments[arguments.index('--dir') + 1]) / name
-            target.write_bytes((checksum + '  pleazyng-linux-x64.tar.gz\n').encode()
-                               if name == 'SHA256SUMS.txt' else payload)
+            target.write_bytes(manifest.encode() if name == 'SHA256SUMS.txt' else payload)
             return SimpleNamespace(stdout='')
         with patch.object(control, 'run', side_effect=download), \
-                patch.object(releases, 'verify_file', side_effect=[('a' * 40, 99), ('a' * 40, 42)]), \
+                patch.object(releases, 'verify_attested_file', return_value=('a' * 40, 99, 2)), \
+                patch.object(releases, 'verify_file', return_value=('a' * 40, 42)), \
                 patch.object(releases, 'completed_core') as completed, patch.object(releases, 'release_tag_commit', return_value='a' * 40):
             result = releases.resolve(release)
-        completed.assert_called_once_with('a' * 40, 99)
+        completed.assert_called_once_with('a' * 40, 99, 2)
         self.assertEqual(result['source_sha'], 'a' * 40)
         self.assertEqual(result['core_producer_run_id'], 42)
         self.assertEqual(result['core_run_id'], 99)
+        self.assertEqual(result['core_run_attempt'], 2)
         self.assertEqual(result['core_linux_sha256'], checksum)
         self.assertEqual(len(calls), 2)
         self.assertFalse(any(Path(call[call.index('--dir') + 1]).exists() for call in calls))
@@ -136,16 +152,19 @@ class ReleaseDeliveryTests(unittest.TestCase):
         checksum = hashlib.sha256(payload).hexdigest()
         release = self.release()
         release['assets'][0]['digest'] = 'sha256:' + checksum
+        manifest = checksum + '  pleazyng-linux-x64.tar.gz\n'
+        release['assets'].append({'name': 'SHA256SUMS.txt',
+                                  'digest': 'sha256:' + hashlib.sha256(manifest.encode()).hexdigest()})
 
         def download(arguments):
             name = arguments[arguments.index('--pattern') + 1]
             target = Path(arguments[arguments.index('--dir') + 1]) / name
-            target.write_bytes((checksum + '  pleazyng-linux-x64.tar.gz\n').encode()
-                               if name == 'SHA256SUMS.txt' else payload)
+            target.write_bytes(manifest.encode() if name == 'SHA256SUMS.txt' else payload)
 
         recovery = {'packaging_source_sha': 'd' * 40, 'receipt_sha256': 'e' * 64, 'approval': {}}
         with patch.object(control, 'run', side_effect=download), \
-                patch.object(releases, 'verify_file', side_effect=[('b' * 40, 99), ('a' * 40, 42)]), \
+                patch.object(releases, 'verify_attested_file', return_value=('b' * 40, 99, 2)), \
+                patch.object(releases, 'verify_file', return_value=('a' * 40, 42)), \
                 patch.object(releases, 'completed_core'), patch.object(releases, 'release_tag_commit', return_value='a' * 40), \
                 patch.object(releases.packaging_recovery, 'verify', return_value=recovery) as verify:
             result = releases.resolve(release)
@@ -155,9 +174,11 @@ class ReleaseDeliveryTests(unittest.TestCase):
         self.assertEqual(result['core_recovery_sha256'], 'e' * 64)
         self.assertEqual(verify.call_args.kwargs['producer_run'], 42)
         self.assertEqual(verify.call_args.kwargs['assembly_run'], 99)
+        self.assertEqual(verify.call_args.kwargs['assembly_attempt'], 2)
         self.assertEqual(verify.call_args.kwargs['linux_sha256'], checksum)
         with patch.object(control, 'run', side_effect=download), \
-                patch.object(releases, 'verify_file', side_effect=[('b' * 40, 99), ('a' * 40, 42)]), \
+                patch.object(releases, 'verify_attested_file', return_value=('b' * 40, 99, 2)), \
+                patch.object(releases, 'verify_file', return_value=('a' * 40, 42)), \
                 patch.object(releases, 'completed_core'), patch.object(releases, 'release_tag_commit', return_value='a' * 40):
             with self.assertRaisesRegex(ValueError, 'public attested receipt'):
                 releases.resolve({**release, 'self_asserted_unchanged_product': True})
@@ -228,13 +249,13 @@ class ReleaseDeliveryTests(unittest.TestCase):
     def test_core_assembler_must_be_successful_trusted_and_exact(self):
         metadata = {'repository': {'id': releases.REPOSITORY_ID}, 'path': '.github/workflows/build.yml',
                     'head_sha': 'b' * 40, 'status': 'completed', 'conclusion': 'success',
-                    'event': 'workflow_dispatch'}
+                    'event': 'workflow_dispatch', 'run_attempt': 2}
         with patch.object(control, 'api', return_value=metadata):
-            releases.completed_core('b' * 40, 99)
+            releases.completed_core('b' * 40, 99, 2)
         for change in [{'conclusion': 'failure'}, {'status': 'in_progress'}, {'head_sha': 'c' * 40},
                        {'event': 'pull_request'}, {'repository': {'id': 99}}, {'path': 'other.yml'}]:
             with self.subTest(change=change), patch.object(control, 'api', return_value={**metadata, **change}), self.assertRaises(ValueError):
-                releases.completed_core('b' * 40, 99)
+                releases.completed_core('b' * 40, 99, 2)
 
     def test_source_tracking_updates_metadata_without_compiling_or_promoting(self):
         import source_sync
@@ -268,7 +289,7 @@ class ReleaseDeliveryTests(unittest.TestCase):
                            'producer_run_id': 42}}}
         environment = {'SOURCE_SHA': 'a' * 40, 'CORE_TAG': 'v3.0.29', 'CORE_RELEASE_ID': '11',
                        'CORE_LINUX_SHA256': 'c' * 64, 'CORE_PRODUCER_RUN_ID': '42',
-                       'CORE_RUN_ID': '99', 'CORE_SOURCE_SHA': 'a' * 40}
+                       'CORE_RUN_ID': '99', 'CORE_RUN_ATTEMPT': '1', 'CORE_SOURCE_SHA': 'a' * 40}
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / 'SHA256SUMS.txt').write_text('')
@@ -291,23 +312,30 @@ class ReleaseDeliveryTests(unittest.TestCase):
                            'producer_run_id': 42}}}
         env = {'SOURCE_SHA': 'a' * 40, 'CORE_TAG': 'v3.0.29', 'CORE_RELEASE_ID': '11',
                'CORE_LINUX_SHA256': 'c' * 64, 'CORE_PRODUCER_RUN_ID': '42', 'CORE_RUN_ID': '99',
-               'CORE_SOURCE_SHA': 'b' * 40, 'CORE_PACKAGING_SOURCE_SHA': 'd' * 40, 'CORE_RECOVERY_SHA256': 'e' * 64}
+               'CORE_RUN_ATTEMPT': '2', 'CORE_SOURCE_SHA': 'b' * 40,
+               'CORE_PACKAGING_SOURCE_SHA': 'd' * 40, 'CORE_RECOVERY_SHA256': 'e' * 64}
         recovery = {'packaging_source_sha': 'd' * 40, 'receipt_sha256': 'e' * 64, 'approval': {'verified': True}}
 
         def download(arguments):
             (Path(arguments[arguments.index('--dir') + 1]) / 'SHA256SUMS.txt').write_text(
                 'c' * 64 + '  pleazyng-linux-x64.tar.gz\n')
 
+        published = self.release()
+        published_manifest = 'c' * 64 + '  pleazyng-linux-x64.tar.gz\n'
+        published['assets'].append({'name': 'SHA256SUMS.txt',
+                                    'digest': 'sha256:' + hashlib.sha256(published_manifest.encode()).hexdigest()})
+
         def certificate(path):
             return ('b' * 40, 99) if path.name == 'SHA256SUMS.txt' else ('a' * 40, 42)
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'SHA256SUMS.txt').write_text('')
+            (root / 'SHA256SUMS.txt').write_text(published_manifest)
             (root / 'pleazyng-linux-x64.tar.gz').write_bytes(b'qualified input')
             with patch.dict(releases.os.environ, env), patch.object(releases, 'release_tag_commit', return_value='a' * 40), \
                     patch.object(releases, 'completed_core'), patch.object(releases, 'verify_file', side_effect=certificate), \
-                    patch.object(control, 'api', return_value=self.release()), patch.object(control, 'run', side_effect=download), \
+                    patch.object(releases, 'verify_attested_file', return_value=('b' * 40, 99, 2)), \
+                    patch.object(control, 'api', return_value=published), patch.object(control, 'run', side_effect=download), \
                     patch.object(control, 'validated', return_value=(q, {'pleazyng-linux-x64.tar.gz': 'c' * 64})), \
                     patch.object(releases.packaging_recovery, 'verify', return_value=recovery) as verify:
                 result = releases.bind_qualified(root)

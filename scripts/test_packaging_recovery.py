@@ -1,9 +1,11 @@
 import base64
 import copy
 import hashlib
+import os
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -81,7 +83,8 @@ class PackagingRecoveryTests(unittest.TestCase):
         if path == f'{prefix}/actions/runs/{IOS_RUN}/attempts/1/jobs?per_page=100':
             return {'total_count': len(self.ios_jobs), 'jobs': copy.deepcopy(self.ios_jobs)}
         for run_id, source in ((P, S), (A, W)):
-            if path == f'{prefix}/actions/runs/{run_id}':
+            if path in (f'{prefix}/actions/runs/{run_id}',
+                        f'{prefix}/actions/runs/{run_id}/attempts/1'):
                 return {'id': run_id, 'repository': {'id': recovery.REPOSITORY_ID},
                         'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': source,
                         'head_branch': 'main', 'event': 'workflow_dispatch', 'path': '.github/workflows/build.yml',
@@ -126,7 +129,7 @@ class PackagingRecoveryTests(unittest.TestCase):
                 patch.object(recovery, 'verify_receipt', return_value=APPROVAL, side_effect=graph_error) as graph:
             result = recovery.verify(release, directory, checksums,
                 product_source=S, compiler_source=compiler, workflow_source=W,
-                producer_run=P, assembly_run=A, linux_sha256=LINUX,
+                producer_run=P, assembly_run=A, assembly_attempt=1, linux_sha256=LINUX,
                 verify_file=lambda path: self.ios_certificate if path.name in recovery.IOS_PACKAGES
                 else self.tv_certificate)
         self.assertEqual(graph.call_args.kwargs['product_source_sha'], S)
@@ -134,6 +137,98 @@ class PackagingRecoveryTests(unittest.TestCase):
         self.assertEqual(graph.call_args.kwargs['source_run_id'], P)
         self.assertEqual(graph.call_args.kwargs['assembly_run_id'], A)
         return result
+
+    def test_supplemental_recovery_requires_canonical_proof_and_exact_attested_assembly_attempt(self):
+        title = f'action:release:pool:public:tag:v3.0.51:assembly:source:{P}:qualification:50'
+        names = sorted(recovery.ARTIFACTS | {'ios-ipa', 'tvos-ipa'})
+        receipt = {
+            'source_run_id': P, 'qualification_run_id': 50, 'run_attempt': 3,
+            'source_sha': S, 'head_sha': S, 'version': '3.0.51',
+            'platforms_complete': True, 'rebuilt_jobs': [],
+            'artifacts': [{'name': name, 'artifact_id': index, 'digest': 'sha256:' + 'e' * 64,
+                           'source_run_id': P, 'source_sha': S, 'workflow_source_sha': S}
+                          for index, name in enumerate(names, 1)],
+        }
+        payload = json.dumps(receipt).encode()
+        digest = hashlib.sha256(payload).hexdigest()
+        release = {'tag_name': 'v3.0.51', 'assets': [{'name': recovery.RECEIPT,
+                   'digest': 'sha256:' + digest}]}
+        checksums = digest + '  ' + recovery.RECEIPT + '\n'
+        artifact_by_id = {item['artifact_id']: item for item in receipt['artifacts']}
+
+        def api(path):
+            attempt_path = f'repos/{control.CANONICAL}/actions/runs/{A}/attempts/2'
+            if path == attempt_path:
+                return {'id': A, 'run_attempt': 2, 'repository': {'id': recovery.REPOSITORY_ID},
+                        'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': W,
+                        'head_branch': 'main', 'path': '.github/workflows/build.yml',
+                        'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': 'success',
+                        'display_title': title}
+            if path.startswith(f'repos/{control.CANONICAL}/actions/artifacts/'):
+                item = artifact_by_id[int(path.rsplit('/', 1)[1])]
+                return {'id': item['artifact_id'], 'name': item['name'], 'digest': item['digest'],
+                        'expired': False, 'workflow_run': {'id': P, 'head_sha': S}}
+            raise AssertionError('Unexpected API request: ' + path)
+
+        def download(arguments):
+            destination = Path(arguments[arguments.index('--dir') + 1]) / recovery.RECEIPT
+            destination.write_bytes(payload)
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(control, 'run', side_effect=download), \
+                patch.object(control, 'api', side_effect=api), \
+                patch.object(recovery, 'supplemental_assembly_title', return_value=title) as verify_supplemental, \
+                patch.object(recovery, 'verify_receipt', side_effect=AssertionError('frozen repair parser must not run')):
+            result = recovery.verify(release, directory, checksums,
+                product_source=S, compiler_source=S, workflow_source=W,
+                producer_run=P, assembly_run=A, assembly_attempt=2, linux_sha256=LINUX)
+        verify_supplemental.assert_called_once_with(receipt, S, 'v3.0.51')
+        self.assertEqual(result['packaging_source_sha'], S)
+        self.assertEqual(result['receipt_sha256'], digest)
+        self.assertEqual(result['approval']['supplemental_apple_qualification'], 50)
+
+    def test_supplemental_recovery_rejects_an_unmatched_assembly_title(self):
+        receipt = {'source_run_id': P, 'qualification_run_id': 50, 'run_attempt': 3,
+                   'source_sha': S, 'head_sha': S, 'version': '3.0.51',
+                   'platforms_complete': True, 'rebuilt_jobs': [], 'artifacts': []}
+        payload = json.dumps(receipt).encode()
+        digest = hashlib.sha256(payload).hexdigest()
+        release = {'tag_name': 'v3.0.51', 'assets': [{'name': recovery.RECEIPT,
+                   'digest': 'sha256:' + digest}]}
+        checksums = digest + '  ' + recovery.RECEIPT + '\n'
+
+        def download(arguments):
+            (Path(arguments[arguments.index('--dir') + 1]) / recovery.RECEIPT).write_bytes(payload)
+
+        assembly = {'id': A, 'run_attempt': 2, 'repository': {'id': recovery.REPOSITORY_ID},
+                    'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': W,
+                    'head_branch': 'main', 'path': '.github/workflows/build.yml',
+                    'event': 'workflow_dispatch', 'status': 'completed', 'conclusion': 'success',
+                    'display_title': 'action:release:unrelated'}
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(control, 'run', side_effect=download), \
+                patch.object(control, 'api', return_value=assembly), \
+                patch.object(recovery, 'supplemental_assembly_title', return_value='expected title'), \
+                self.assertRaisesRegex(ValueError, 'independently verified supplemental assembly'):
+            recovery.verify(release, directory, checksums,
+                product_source=S, compiler_source=S, workflow_source=W,
+                producer_run=P, assembly_run=A, assembly_attempt=2, linux_sha256=LINUX)
+
+    def test_supplemental_verifier_loads_only_from_explicit_canonical_checkout(self):
+        with self.assertRaisesRegex(ValueError, 'Trusted canonical verification checkout'):
+            with patch.dict(os.environ, {'PLEAZYNG_TOOLING': ''}):
+                recovery.supplemental_assembly_title({}, S, 'v3.0.51')
+        with tempfile.TemporaryDirectory() as directory:
+            module_path = Path(directory) / 'scripts' / 'nix_release_metadata.py'
+            module_path.parent.mkdir()
+            module_path.write_text('# canonical verifier fixture\n')
+            verifier = SimpleNamespace(__file__=str(module_path),
+                verify_supplemental_recovery=lambda receipt, source, tag: f'{source}:{tag}')
+            with patch.dict(os.environ, {'PLEAZYNG_TOOLING': directory}), \
+                    patch.object(recovery.sys, 'path', []), \
+                    patch.object(recovery.importlib, 'import_module', return_value=verifier):
+                self.assertEqual(recovery.supplemental_assembly_title({}, S, 'v3.0.51'),
+                                 S + ':v3.0.51')
 
     def test_attested_receipt_requires_independent_graph_ci_artifacts_and_signed_builds(self):
         result = self.verify()
@@ -334,7 +429,8 @@ class MacosPackagingProvenanceTests(unittest.TestCase):
             self.assembly: (self.assembler, 'success'),
         }
         for run_id, (source, conclusion) in run_by_id.items():
-            if path == f'{prefix}/actions/runs/{run_id}':
+            if path in (f'{prefix}/actions/runs/{run_id}',
+                        f'{prefix}/actions/runs/{run_id}/attempts/1'):
                 return {'id': run_id, 'repository': {'id': recovery.REPOSITORY_ID},
                     'head_repository': {'id': recovery.REPOSITORY_ID}, 'head_sha': source,
                     'head_branch': 'main', 'path': '.github/workflows/build.yml',
@@ -351,7 +447,7 @@ class MacosPackagingProvenanceTests(unittest.TestCase):
             proof = recovery.verify_macos_packaging_provenance(self.receipt,
                 release={'tag_name': 'v3.0.44'}, product_source=self.product,
                 workflow_source=self.assembler, producer_run=self.producer,
-                assembly_run=self.assembly)
+                assembly_run=self.assembly, assembly_attempt=1)
         self.assertEqual(proof['recovery_policy'], 'macos-packaging-provenance-v1')
         self.assertEqual(proof['packaging_source_sha'], self.assembler)
 
@@ -373,9 +469,26 @@ class MacosPackagingProvenanceTests(unittest.TestCase):
             proof = recovery.verify(release, directory, checksums,
                 product_source=self.product, compiler_source=self.product,
                 workflow_source=self.assembler, producer_run=self.producer,
-                assembly_run=self.assembly, linux_sha256='d' * 64)
+                assembly_run=self.assembly, assembly_attempt=1, linux_sha256='d' * 64)
         self.assertEqual(proof['receipt_sha256'], digest)
         self.assertEqual(proof['recovery_policy'], 'macos-packaging-provenance-v1')
+
+    def test_recovery_workflows_use_canonical_supplemental_verifier_checkout(self):
+        root = Path(__file__).resolve().parents[1]
+        sync = (root / '.github/workflows/sync.yml').read_text(encoding='utf-8')
+        retry = (root / '.github/workflows/retry-publish.yml').read_text(encoding='utf-8')
+        checkout = ('repository: snapetech-org/pleazyng\n'
+                    '          ref: b8a21e26d29b54075ff4828ad5e9f648e166d2a5\n'
+                    '          path: tooling\n          persist-credentials: false\n'
+                    '          sparse-checkout: scripts')
+        self.assertEqual(sync.count(checkout), 2)
+        self.assertIn('repository: snapetech-org/pleazyng\n          ref: main\n'
+                      '          path: tooling', sync)
+        self.assertIn('PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling', sync)
+        self.assertIn('CORE_RUN_ATTEMPT: ${{ needs.plan.outputs.core_run_attempt }}', sync)
+        self.assertIn(checkout, retry)
+        self.assertIn('PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling', retry)
+        self.assertIn('aerynos-qualify.yml@9a0373938f7dfb97578a8a5e4e2ac45d2a6f75a9', sync)
 
     def test_rejects_wrong_profile_identity_or_incomplete_platform_set(self):
         for change in ({'profile': 'unknown'}, {'source_sha': 'f' * 40},
@@ -391,7 +504,7 @@ class MacosPackagingProvenanceTests(unittest.TestCase):
                 recovery.verify_macos_packaging_provenance({**self.receipt, **change},
                     release={'tag_name': 'v3.0.44'}, product_source=self.product,
                     workflow_source=self.assembler, producer_run=self.producer,
-                    assembly_run=self.assembly)
+                    assembly_run=self.assembly, assembly_attempt=1)
 
     def test_rejects_failed_or_mismatched_recovered_macos_job(self):
         self.macos_jobs[0]['conclusion'] = 'failure'
@@ -401,7 +514,7 @@ class MacosPackagingProvenanceTests(unittest.TestCase):
             recovery.verify_macos_packaging_provenance(self.receipt,
                 release={'tag_name': 'v3.0.44'}, product_source=self.product,
                 workflow_source=self.assembler, producer_run=self.producer,
-                assembly_run=self.assembly)
+                assembly_run=self.assembly, assembly_attempt=1)
 
 
 if __name__ == '__main__':

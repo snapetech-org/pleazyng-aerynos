@@ -30,6 +30,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: snapetech-org/pleazyng
+          ref: b8a21e26d29b54075ff4828ad5e9f648e166d2a5
+          path: tooling
+          persist-credentials: false
+          sparse-checkout: scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: aerynos-qualified-${{ inputs.source_sha }}
@@ -40,6 +47,7 @@ jobs:
       - name: Bind verified core release and promote qualified package
         env:
           GH_TOKEN: ${{ github.token }}
+          PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling
           CORE_TAG: ${{ inputs.core_tag }}
           QUALIFIED_RUN_ID: ${{ inputs.qualified_run_id }}
         run: python3 scripts/retry_publish.py "$RUNNER_TEMP/qualified" --core-tag "$CORE_TAG" --qualified-run-id "$QUALIFIED_RUN_ID"

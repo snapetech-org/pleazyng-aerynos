@@ -75,20 +75,44 @@ def producer_from_verification(results):
     return identities.pop()
 
 
+def producer_attempt_from_verification(results):
+    """Require the attested checksum manifest to name its exact workflow attempt."""
+    identities = set()
+    for result in results:
+        cert = result.get('verificationResult', {}).get('signature', {}).get('certificate', {})
+        match = re.fullmatch(r'https://github.com/' + re.escape(control.CANONICAL)
+                             + r'/actions/runs/([1-9][0-9]*)/attempts/([1-9][0-9]*)',
+                             cert.get('runInvocationURI', ''))
+        source = cert.get('sourceRepositoryDigest', '')
+        if (str(cert.get('sourceRepositoryIdentifier')) == str(REPOSITORY_ID)
+                and re.fullmatch('[0-9a-f]{40}', source) and match):
+            identities.add((source, int(match.group(1)), int(match.group(2))))
+    if len(identities) != 1:
+        raise ValueError('Attested release checksums must identify exactly one canonical workflow attempt')
+    return identities.pop()
+
+
 def verify_file(path):
     result = control.run(['gh', 'attestation', 'verify', str(path), '--repo', control.CANONICAL,
                           '--signer-workflow', SIGNER, '--format', 'json'])
     return producer_from_verification(json.loads(result.stdout))
 
 
-def completed_core(source, producer):
+def verify_attested_file(path):
+    result = control.run(['gh', 'attestation', 'verify', str(path), '--repo', control.CANONICAL,
+                          '--signer-workflow', SIGNER, '--format', 'json'])
+    return producer_attempt_from_verification(json.loads(result.stdout))
+
+
+def completed_core(source, producer, attempt):
     metadata = control.api(f'repos/{control.CANONICAL}/actions/runs/{producer}')
     if (metadata.get('repository', {}).get('id') != REPOSITORY_ID
             or metadata.get('path') != '.github/workflows/build.yml'
             or metadata.get('head_sha') != source or metadata.get('status') != 'completed'
             or metadata.get('conclusion') != 'success'
+            or metadata.get('run_attempt') != attempt
             or metadata.get('event') not in ('workflow_dispatch', 'push', 'release')):
-        raise ValueError('Attested release assembler has not completed successfully in the canonical workflow')
+        raise ValueError('Attested release assembler attempt has not completed successfully in the canonical workflow')
 
 
 def release_tag_commit(tag):
@@ -118,12 +142,20 @@ def require_frozen_source(tag_source, compiler_source, assembler_source):
 
 def resolve(release):
     asset = linux_asset(release)
+    checksum_assets = [item for item in release['assets'] if item.get('name') == 'SHA256SUMS.txt']
+    if (len(checksum_assets) != 1
+            or not re.fullmatch(r'sha256:[0-9a-f]{64}', checksum_assets[0].get('digest') or '')):
+        raise ValueError('Published core release requires one digest-bound checksum manifest')
     with tempfile.TemporaryDirectory(prefix='aerynos-release-') as temporary:
         checksums = Path(temporary) / 'SHA256SUMS.txt'
         control.run(['gh', 'release', 'download', release['tag_name'], '--repo', control.CANONICAL,
                      '--pattern', checksums.name, '--dir', temporary])
-        core_source, core_run = verify_file(checksums)
-        completed_core(core_source, core_run)
+        with checksums.open('rb') as stream:
+            manifest_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
+        if checksum_assets[0]['digest'] != 'sha256:' + manifest_sha256:
+            raise ValueError('Downloaded checksum manifest differs from the published release asset')
+        core_source, core_run, core_attempt = verify_attested_file(checksums)
+        completed_core(core_source, core_run, core_attempt)
         tag_source = release_tag_commit(release['tag_name'])
         expected = [line.split()[0] for line in checksums.read_text().splitlines()
                     if len(line.split()) == 2 and line.split()[1].lstrip('*') == asset['name']]
@@ -143,11 +175,13 @@ def resolve(release):
         if core_source != tag_source:
             recovery = packaging_recovery.verify(release, temporary, checksums.read_text(),
                 product_source=tag_source, compiler_source=source, workflow_source=core_source,
-                producer_run=producer, assembly_run=core_run, linux_sha256=checksum, verify_file=verify_file)
+                producer_run=producer, assembly_run=core_run, assembly_attempt=core_attempt,
+                linux_sha256=checksum, verify_file=verify_file)
     # Keep original Linux compilation and successful final assembly separate.
     return {'source_sha': source, 'core_producer_run_id': producer, 'core_tag': release['tag_name'],
             'core_release_id': release['id'], 'core_linux_sha256': checksum,
             'core_release_url': release['html_url'], 'core_run_id': core_run,
+            'core_run_attempt': core_attempt,
             'core_source_sha': core_source, 'version_tag_source_sha': tag_source,
             'core_packaging_source_sha': recovery['packaging_source_sha'] if recovery else '',
             'core_recovery_sha256': recovery['receipt_sha256'] if recovery else ''}
@@ -275,7 +309,8 @@ def bind_qualified(directory):
     if (release.get('tag_name') != tag or release.get('draft') or not release.get('published_at')
             or str(release['id']) != os.environ['CORE_RELEASE_ID']):
         raise ValueError('Core release is not the approved published release')
-    completed_core(os.environ['CORE_SOURCE_SHA'], os.environ['CORE_RUN_ID'])
+    completed_core(os.environ['CORE_SOURCE_SHA'], int(os.environ['CORE_RUN_ID']),
+                   int(os.environ['CORE_RUN_ATTEMPT']))
     tag_source = release_tag_commit(tag)
     require_frozen_source(tag_source, q['source_sha'], tag_source)
     asset = linux_asset(release)
@@ -297,7 +332,14 @@ def bind_qualified(directory):
             control.run(['gh', 'release', 'download', tag, '--repo', control.CANONICAL,
                          '--pattern', 'SHA256SUMS.txt', '--dir', temporary])
             checksums = Path(temporary) / 'SHA256SUMS.txt'
-            if verify_file(checksums) != (os.environ['CORE_SOURCE_SHA'], int(os.environ['CORE_RUN_ID'])):
+            checksum_assets = [item for item in release.get('assets', [])
+                               if item.get('name') == 'SHA256SUMS.txt']
+            with checksums.open('rb') as stream:
+                manifest_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
+            if (len(checksum_assets) != 1
+                    or checksum_assets[0].get('digest') != 'sha256:' + manifest_sha256
+                    or verify_attested_file(checksums) != (os.environ['CORE_SOURCE_SHA'],
+                        int(os.environ['CORE_RUN_ID']), int(os.environ['CORE_RUN_ATTEMPT']))):
                 raise ValueError('Recovery assembly identity changed after native qualification')
             if (packaging_recovery.checksum_for(checksums.read_text(), 'pleazyng-linux-x64.tar.gz') != checksum
                     or verify_file(directory / 'pleazyng-linux-x64.tar.gz') !=
@@ -306,6 +348,7 @@ def bind_qualified(directory):
             recovery = packaging_recovery.verify(release, temporary, checksums.read_text(),
                 product_source=tag_source, compiler_source=q['source_sha'], workflow_source=os.environ['CORE_SOURCE_SHA'],
                 producer_run=int(os.environ['CORE_PRODUCER_RUN_ID']), assembly_run=int(os.environ['CORE_RUN_ID']),
+                assembly_attempt=int(os.environ['CORE_RUN_ATTEMPT']),
                 linux_sha256=checksum, verify_file=verify_file)
         if (recovery['packaging_source_sha'] != os.environ.get('CORE_PACKAGING_SOURCE_SHA')
                 or recovery['receipt_sha256'] != os.environ.get('CORE_RECOVERY_SHA256')):
@@ -316,6 +359,7 @@ def bind_qualified(directory):
                'linux_sha256': checksum, 'source_sha': q['source_sha'],
                'linux_producer_run_id': provenance['producer_run_id'],
                'assembler_run_id': int(os.environ['CORE_RUN_ID']),
+               'assembler_run_attempt': int(os.environ['CORE_RUN_ATTEMPT']),
                'assembler_source_sha': os.environ['CORE_SOURCE_SHA'], 'version_tag_source_sha': tag_source,
                'qualification_run_id': int(qualified_run_id or os.environ.get('GITHUB_RUN_ID', '0'))}
     if recovery:

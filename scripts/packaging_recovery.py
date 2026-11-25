@@ -1,9 +1,12 @@
 """Verify public, attested frozen-source Apple packaging recovery evidence."""
 import base64
 import hashlib
+import importlib
 import json
+import os
 from pathlib import Path
 import re
+import sys
 
 import control
 from verify_frozen_packaging_repair import verify_receipt, verify_frozen_packaging_repair
@@ -63,6 +66,40 @@ def trusted_run(run_id, source, *, completed_success=False):
             and (not completed_success or run.get('conclusion') == 'success'),
             'Recovery run is not the completed trusted canonical source/workflow')
     return run
+
+
+def trusted_attempt(run_id, source, attempt, *, completed_success=False):
+    require(type(run_id) is int and run_id > 0 and type(attempt) is int and attempt > 0,
+            'Attested recovery assembler requires an exact run attempt')
+    run = control.api(f'repos/{control.CANONICAL}/actions/runs/{run_id}/attempts/{attempt}')
+    require(run.get('id') == run_id and run.get('run_attempt') == attempt
+            and run.get('repository', {}).get('id') == REPOSITORY_ID
+            and run.get('head_repository', {}).get('id') == REPOSITORY_ID
+            and run.get('head_sha') == source and run.get('head_branch') == 'main'
+            and run.get('path') == '.github/workflows/build.yml'
+            and run.get('event') == 'workflow_dispatch' and run.get('status') == 'completed'
+            and (not completed_success or run.get('conclusion') == 'success'),
+            'Attested recovery assembler is not the exact completed trusted canonical attempt')
+    return run
+
+
+def supplemental_assembly_title(receipt, product_source, tag):
+    """Use the canonical verifier for the separately qualified Apple recovery format."""
+    tooling = os.environ.get('PLEAZYNG_TOOLING')
+    require(isinstance(tooling, str) and tooling,
+            'Trusted canonical verification checkout is required for supplemental recovery')
+    scripts = (Path(tooling).resolve() / 'scripts')
+    module_path = scripts / 'nix_release_metadata.py'
+    require(module_path.is_file(), 'Canonical supplemental recovery verifier is unavailable')
+    scripts_text = str(scripts)
+    if scripts_text not in sys.path:
+        sys.path.insert(0, scripts_text)
+    module = importlib.import_module('nix_release_metadata')
+    require(Path(module.__file__).resolve() == module_path.resolve(),
+            'Supplemental recovery verifier did not load from the trusted canonical checkout')
+    verify_supplemental = getattr(module, 'verify_supplemental_recovery', None)
+    require(callable(verify_supplemental), 'Canonical supplemental recovery verifier is incomplete')
+    return verify_supplemental(receipt, product_source, tag)
 
 
 def manifest(source):
@@ -245,7 +282,7 @@ def verify_ios(receipt, release, directory, checksums, product, original_run, wo
 
 
 def verify_macos_packaging_provenance(receipt, *, release, product_source, workflow_source,
-                                     producer_run, assembly_run):
+                                     producer_run, assembly_run, assembly_attempt):
     """Verify a complete release assembled after a macOS-only packaging recovery.
 
     The downstream package consumes the original Linux compiler artifact. This
@@ -311,7 +348,7 @@ def verify_macos_packaging_provenance(receipt, *, release, product_source, workf
 
     ancestor(product_source, macos['source_sha'])
     ancestor(macos['source_sha'], workflow_source)
-    assembly = trusted_run(assembly_run, workflow_source, completed_success=True)
+    assembly = trusted_attempt(assembly_run, workflow_source, assembly_attempt, completed_success=True)
     require(assembly.get('id') == assembly_run, 'Final release assembler identity changed')
     return {'recovery_policy': 'macos-packaging-provenance-v1',
             'product_source_sha': product_source, 'packaging_source_sha': workflow_source,
@@ -321,7 +358,7 @@ def verify_macos_packaging_provenance(receipt, *, release, product_source, workf
 
 
 def verify(release, directory, checksums, *, product_source, compiler_source, workflow_source,
-           producer_run, assembly_run, linux_sha256, verify_file=None):
+           producer_run, assembly_run, assembly_attempt, linux_sha256, verify_file=None):
     """Checksums and Linux certificate identities must already be verified."""
     require(compiler_source == product_source, 'Linux compiler source must equal the frozen version tag')
     assets = [item for item in release['assets'] if item['name'] == RECEIPT]
@@ -339,8 +376,19 @@ def verify(release, directory, checksums, *, product_source, compiler_source, wo
         # asset's digest. This profile is not independently attested as a file.
         proof = verify_macos_packaging_provenance(receipt, release=release,
             product_source=product_source, workflow_source=workflow_source,
-            producer_run=producer_run, assembly_run=assembly_run)
+            producer_run=producer_run, assembly_run=assembly_run,
+            assembly_attempt=assembly_attempt)
         return {**proof, 'receipt_sha256': expected}
+    if 'qualification_run_id' in receipt:
+        title = supplemental_assembly_title(receipt, product_source, release['tag_name'])
+        assembly = trusted_attempt(assembly_run, workflow_source, assembly_attempt,
+                                   completed_success=True)
+        require(assembly.get('display_title') == title,
+                'Attested manifest is not from the independently verified supplemental assembly')
+        verify_artifacts(receipt, product_source, producer_run)
+        return {'packaging_source_sha': product_source, 'receipt_sha256': expected,
+                'approval': {'supplemental_apple_qualification': receipt['qualification_run_id'],
+                             'assembly_run_id': assembly_run, 'assembly_attempt': assembly_attempt}}
     packaging = receipt.get('packaging_source_sha')
     proof = verify_receipt(receipt, product_source_sha=product_source,
                            packaging_source_sha=packaging, workflow_source_sha=workflow_source,
@@ -380,8 +428,9 @@ def verify(release, directory, checksums, *, product_source, compiler_source, wo
                 and receipt[alias].get('source_sha') == product_source, 'Non-Apple platform source changed during repair')
     verify_original(receipt, product_source, producer_run, reused_tvos=bool(reused_tv),
                     reused_ios=bool(reused_ios))
-    assembly = trusted_run(assembly_run, workflow_source, completed_success=True)
-    assembly_jobs = jobs(assembly_run, assembly['run_attempt'])
+    assembly = trusted_attempt(assembly_run, workflow_source, assembly_attempt,
+                               completed_success=True)
+    assembly_jobs = jobs(assembly_run, assembly_attempt)
     for name in rebuilt:
         job = successful(assembly_jobs, name)
         label = 'Build signed iOS App Store IPA' if name == 'build-ios' else 'Build signed tvOS App Store IPA'

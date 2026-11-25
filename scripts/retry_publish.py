@@ -30,6 +30,7 @@ def main():
         'CORE_TAG': candidate['core_tag'],
         'CORE_RELEASE_ID': str(candidate['core_release_id']),
         'CORE_RUN_ID': str(candidate['core_run_id']),
+        'CORE_RUN_ATTEMPT': str(candidate['core_run_attempt']),
         'CORE_SOURCE_SHA': candidate['core_source_sha'],
         'CORE_LINUX_SHA256': candidate['core_linux_sha256'],
         'CORE_PRODUCER_RUN_ID': str(candidate['core_producer_run_id']),

@@ -162,6 +162,16 @@ recovery job and final assembly succeeded. Unknown or incomplete profiles still
 fail closed. The aerynOS package continues to use the original attested Linux
 artifact without recompiling or replacing it.
 
+A release can also finish embedded Apple native CI through a supplemental
+qualification run. Its receipt carries `qualification_run_id` rather than a
+frozen packaging repair identity. The resolver checks the complete receipt
+against the canonical supplemental verifier pinned at
+`b8a21e26d29b54075ff4828ad5e9f648e166d2a5`, verifies the exact
+assembler attempt from the attested `SHA256SUMS.txt`, and requires the expected
+assembly title. The original version-tag product and Linux producer remain
+unchanged; native aerynOS build and installation/playback qualification still
+run fresh before the feed can advance.
+
 A completed tvOS output may be reused while repairing iOS. Its producer must
 have passed signed build, attestation and upload steps for a separately approved
 repair of the same frozen product. The consumer verifies that producer's Git

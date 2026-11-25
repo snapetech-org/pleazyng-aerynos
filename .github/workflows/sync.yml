@@ -27,6 +27,7 @@ jobs:
       core_tag: ${{ steps.plan.outputs.core_tag }}
       core_release_id: ${{ steps.plan.outputs.core_release_id }}
       core_run_id: ${{ steps.plan.outputs.core_run_id }}
+      core_run_attempt: ${{ steps.plan.outputs.core_run_attempt }}
       core_source_sha: ${{ steps.plan.outputs.core_source_sha }}
       core_linux_sha256: ${{ steps.plan.outputs.core_linux_sha256 }}
       core_packaging_source_sha: ${{ steps.plan.outputs.core_packaging_source_sha }}
@@ -36,12 +37,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: snapetech-org/pleazyng
+          ref: b8a21e26d29b54075ff4828ad5e9f648e166d2a5
+          path: tooling
+          persist-credentials: false
+          sparse-checkout: scripts
       - name: Validate controller
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Resolve published release and original Linux producer
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}
+          PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling
           MANUAL_RETRY: ${{ inputs.retry_now && 'true' || 'false' }}
         run: python3 scripts/releases.py reconcile
   build:
@@ -105,6 +114,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: snapetech-org/pleazyng
+          ref: b8a21e26d29b54075ff4828ad5e9f648e166d2a5
+          path: tooling
+          persist-credentials: false
+          sparse-checkout: scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: aerynos-qualified-${{ needs.plan.outputs.source_sha }}
@@ -119,11 +135,13 @@ jobs:
           CORE_TAG: ${{ needs.plan.outputs.core_tag }}
           CORE_RELEASE_ID: ${{ needs.plan.outputs.core_release_id }}
           CORE_RUN_ID: ${{ needs.plan.outputs.core_run_id }}
+          CORE_RUN_ATTEMPT: ${{ needs.plan.outputs.core_run_attempt }}
           CORE_SOURCE_SHA: ${{ needs.plan.outputs.core_source_sha }}
           CORE_LINUX_SHA256: ${{ needs.plan.outputs.core_linux_sha256 }}
           CORE_PRODUCER_RUN_ID: ${{ needs.plan.outputs.core_producer_run_id }}
           CORE_PACKAGING_SOURCE_SHA: ${{ needs.plan.outputs.core_packaging_source_sha }}
           CORE_RECOVERY_SHA256: ${{ needs.plan.outputs.core_recovery_sha256 }}
+          PLEAZYNG_TOOLING: ${{ github.workspace }}/tooling
         run: |
           python3 scripts/releases.py bind "$RUNNER_TEMP/qualified"
           python3 scripts/control.py publish "$RUNNER_TEMP/qualified"
