@@ -182,7 +182,7 @@ class PackagingRecoveryTests(unittest.TestCase):
             result = recovery.verify(release, directory, checksums,
                 product_source=S, compiler_source=S, workflow_source=W,
                 producer_run=P, assembly_run=A, assembly_attempt=2, linux_sha256=LINUX)
-        verify_supplemental.assert_called_once_with(receipt, S, 'v3.0.51')
+        verify_supplemental.assert_called_once_with(receipt, S, 'v3.0.51', checksums)
         self.assertEqual(result['packaging_source_sha'], S)
         self.assertEqual(result['receipt_sha256'], digest)
         self.assertEqual(result['approval']['supplemental_apple_qualification'], 50)
@@ -217,17 +217,17 @@ class PackagingRecoveryTests(unittest.TestCase):
     def test_supplemental_verifier_loads_only_from_explicit_canonical_checkout(self):
         with self.assertRaisesRegex(ValueError, 'Trusted canonical verification checkout'):
             with patch.dict(os.environ, {'PLEAZYNG_TOOLING': ''}):
-                recovery.supplemental_assembly_title({}, S, 'v3.0.51')
+                recovery.supplemental_assembly_title({}, S, 'v3.0.51', 'sums')
         with tempfile.TemporaryDirectory() as directory:
             module_path = Path(directory) / 'scripts' / 'nix_release_metadata.py'
             module_path.parent.mkdir()
             module_path.write_text('# canonical verifier fixture\n')
             verifier = SimpleNamespace(__file__=str(module_path),
-                verify_supplemental_recovery=lambda receipt, source, tag: f'{source}:{tag}')
+                verify_supplemental_recovery=lambda receipt, source, tag, **kwargs: f'{source}:{tag}')
             with patch.dict(os.environ, {'PLEAZYNG_TOOLING': directory}), \
                     patch.object(recovery.sys, 'path', []), \
                     patch.object(recovery.importlib, 'import_module', return_value=verifier):
-                self.assertEqual(recovery.supplemental_assembly_title({}, S, 'v3.0.51'),
+                self.assertEqual(recovery.supplemental_assembly_title({}, S, 'v3.0.51', 'sums'),
                                  S + ':v3.0.51')
 
     def test_attested_receipt_requires_independent_graph_ci_artifacts_and_signed_builds(self):

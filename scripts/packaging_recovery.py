@@ -83,7 +83,7 @@ def trusted_attempt(run_id, source, attempt, *, completed_success=False):
     return run
 
 
-def supplemental_assembly_title(receipt, product_source, tag):
+def supplemental_assembly_title(receipt, product_source, tag, checksums):
     """Use the canonical verifier for the separately qualified Apple recovery format."""
     tooling = os.environ.get('PLEAZYNG_TOOLING')
     require(isinstance(tooling, str) and tooling,
@@ -99,7 +99,10 @@ def supplemental_assembly_title(receipt, product_source, tag):
             'Supplemental recovery verifier did not load from the trusted canonical checkout')
     verify_supplemental = getattr(module, 'verify_supplemental_recovery', None)
     require(callable(verify_supplemental), 'Canonical supplemental recovery verifier is incomplete')
-    return verify_supplemental(receipt, product_source, tag)
+    return verify_supplemental(
+        receipt, product_source, tag, manifest=checksums,
+        github=lambda path: control.api(f'repos/{control.CANONICAL}/{path}'),
+    )
 
 
 def manifest(source):
@@ -380,7 +383,7 @@ def verify(release, directory, checksums, *, product_source, compiler_source, wo
             assembly_attempt=assembly_attempt)
         return {**proof, 'receipt_sha256': expected}
     if 'qualification_run_id' in receipt:
-        title = supplemental_assembly_title(receipt, product_source, release['tag_name'])
+        title = supplemental_assembly_title(receipt, product_source, release['tag_name'], checksums)
         assembly = trusted_attempt(assembly_run, workflow_source, assembly_attempt,
                                    completed_success=True)
         require(assembly.get('display_title') == title,
