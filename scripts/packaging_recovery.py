@@ -21,6 +21,7 @@ REUSED = {'Validate release request', 'Build Linux (x64)', 'Build Linux (arm64)'
 ARTIFACTS = {'pleazyng-tizen-arm-experimental', 'macos-dmg', 'windows-x64-portable',
              'windows-arm64-build', 'windows-installer', 'windows-chocolatey',
              'linux-x64', 'linux-arm64', 'linux-x64-appimage', 'android-apk', 'webos-ipk'}
+CONTINUATION_WINDOWS = {'windows-x64-portable', 'windows-installer', 'windows-chocolatey'}
 TV_JOB = 'Build tvOS developer package (arm64)'
 TV_PACKAGES = ('pleazyng-tvos-unsigned.ipa', 'pleazyng-tvos-appstore.ipa')
 IOS_JOB = 'build-ios'
@@ -145,9 +146,13 @@ def verify_artifacts(receipt, source, producer):
     records = receipt.get('artifacts')
     require(isinstance(records, list) and records, 'Recovery artifact inventory is missing')
     names = set()
+    continuation = receipt.get('assembly_scope') == 'qualified-assembly-continuation'
     for item in records:
         sibling = (receipt.get('tvos_source') if isinstance(item, dict) and item.get('name') == 'tvos-ipa' else
                    receipt.get('ios_source') if isinstance(item, dict) and item.get('name') == 'ios-ipa' else None)
+        if (continuation and isinstance(item, dict)
+                and item.get('name') in CONTINUATION_WINDOWS):
+            sibling = receipt.get('qualification_assembly_source')
         run = sibling['source_run_id'] if sibling else producer
         checkout = sibling['source_sha'] if sibling else source
         workflow = sibling['workflow_source_sha'] if sibling else source
@@ -164,7 +169,9 @@ def verify_artifacts(receipt, source, producer):
                 and actual.get('workflow_run', {}).get('head_sha') == workflow,
                 'Original artifact metadata differs from the attested recovery record')
         if sibling:
-            require(item['artifact_id'] == sibling['artifact_id'] and item['digest'] == sibling['artifact_digest'],
+            expected = sibling.get('assembly_artifacts', {}).get(item['name'], sibling)
+            expected_digest = expected.get('digest', expected.get('artifact_digest'))
+            require(item['artifact_id'] == expected.get('artifact_id') and item['digest'] == expected_digest,
                     'Reused Apple artifact differs from its separately verified producer')
     expected = ARTIFACTS | ({'ios-ipa'} if 'build-ios' not in receipt['rebuilt_jobs'] else set())
     expected |= {'tvos-ipa'} if 'Build tvOS developer package (arm64)' not in receipt['rebuilt_jobs'] else set()
