@@ -113,8 +113,8 @@
   "v3.0.52": {
     "phase": "failed",
     "release_id": 458455607,
-    "failed_at": "2026-11-25T17:58:18.177240+00:00",
-    "reason": "Source platform job is not uniquely successful: Build tvOS developer package (arm64)",
-    "retry_after": "2026-11-25T18:28:18.177261+00:00"
+    "failed_at": "2026-11-25T18:21:17.607445+00:00",
+    "reason": "Qualified continuation receipt has invalid assembly, workflow, or checksum identities",
+    "retry_after": "2026-11-25T18:51:17.607459+00:00"
   }
 }
