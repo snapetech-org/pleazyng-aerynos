@@ -355,6 +355,24 @@
     "release": 69,
     "channel_tag": "main-d240ae2c8700-r69",
     "channel_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-d240ae2c8700-r69",
-    "published_at": "2026-11-25T18:44:15.862758+00:00"
+    "published_at": "2026-11-25T18:44:15.862758+00:00",
+    "public_verification": {
+      "status": "passed",
+      "source_sha": "d240ae2c8700a895c8a7b9d8ddcfb3b2204d3fe4",
+      "version": "3.0.52+211",
+      "release": 69,
+      "tag": "main-d240ae2c8700-r69",
+      "checks": [
+        "anonymous_live_index_digest",
+        "anonymous_pinned_index_digest",
+        "native_live_moss_install",
+        "native_pinned_moss_reinstall",
+        "ordinary_launch",
+        "runtime_source_version"
+      ],
+      "run_url": "https://github.com/snapetech-org/pleazyng-aerynos/actions/runs/45675375725",
+      "verified_at": "2026-11-25T18:49:48.896436+00:00",
+      "report_sha256": "6a48119fa1a4ee7d767f5561801af9f74441f918865d4612403c983997a58d21"
+    }
   }
 }
