@@ -284,5 +284,32 @@
       "verified_at": "2026-11-23T13:53:18.349987+00:00",
       "report_sha256": "0218232afd8e677e3c9d19bf925c3e4b2396db1913a8cd04396aa0f2fb7dad2b"
     }
+  },
+  "v3.0.51": {
+    "tag": "v3.0.51",
+    "release_id": 457590284,
+    "url": "https://github.com/snapetech-org/pleazyng/releases/tag/v3.0.51",
+    "linux_sha256": "30832ba1b818e73f0b2863dccd47320e9be8fef006c612a5a65fc153cbedd3b6",
+    "source_sha": "cd7b18d7013edf93cb345738e8deeb4cc809473c",
+    "linux_producer_run_id": 45421474803,
+    "assembler_run_id": 45533107145,
+    "assembler_run_attempt": 2,
+    "assembler_source_sha": "747c0673fb98410d8ccb24b975ace42a931bc140",
+    "version_tag_source_sha": "cd7b18d7013edf93cb345738e8deeb4cc809473c",
+    "qualification_run_id": 45541957115,
+    "packaging_recovery": {
+      "packaging_source_sha": "cd7b18d7013edf93cb345738e8deeb4cc809473c",
+      "receipt_sha256": "6f9568bfd5d1d0a3f7fe7cc0c9e3185a91dc8c1f1aed965760a5c3d3ce0799d2",
+      "approval": {
+        "supplemental_apple_qualification": 45526088477,
+        "assembly_run_id": 45533107145,
+        "assembly_attempt": 2
+      }
+    },
+    "version": "3.0.51+210",
+    "release": 68,
+    "channel_tag": "main-cd7b18d7013e-r68",
+    "channel_url": "https://github.com/snapetech-org/pleazyng-aerynos/releases/tag/main-cd7b18d7013e-r68",
+    "published_at": "2026-11-25T04:03:20.407846+00:00"
   }
 }
